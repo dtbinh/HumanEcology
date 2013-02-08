@@ -1,5 +1,5 @@
-globals [food_collection_left food_collection_right predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAdev GAevap GArecruit GAtrail_drop GAtrail GAsite GAexpand
-         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr]
+globals [food_collection_left food_collection_right food_collection_total predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAdev GAevap GArecruit GAtrail_drop GAtrail GAsite GAexpand
+         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total]
 
 breed [humans human]
 
@@ -19,17 +19,17 @@ to setup_world
   ;; the beginning of your setup procedure and reset-ticks at the end
   ;; of the procedure.)
   __clear-all-and-reset-ticks   
-  create_large_food
-  create_medium_food
-  create_small_food
-  create_other_food 
+;  create_large_food
+;  create_medium_food
+;  create_small_food
+;  create_other_food 
   setup_humans
   ask patches [
   set pcolor red
-  
-  if pxcor < 1 and pxcor > -1 
-     [ set pcolor black
-  ]
+;  
+;  if pxcor < 1 and pxcor > -1 
+;     [ set pcolor black
+;  ]
   ]
 end
 
@@ -39,21 +39,21 @@ to setup_save  ;function re-generates a perviously saved pile configuration
   ask patches [  
     set pheremone? 0  ;resets all pheromone values
     set pcolor green  ;refreshes the world in base green color  
-    if pxcor < 1 and pxcor > -1 [
-      set pcolor black
-    ]  
+;    if pxcor < 1 and pxcor > -1 [
+;      set pcolor black
+;    ]  
     if lfood? = 1 [
       set pcolor red  ;colors red dense piles
     ]
-    if mfood? = 1 [
-      set pcolor yellow  ;colors medium density piles
-    ]
-    if sfood? = 1 [
-      set pcolor 7  ;colors random seeds 
-    ]
-    if ofood? = 1 [
-      set pcolor 123  ;colors low density piles
-    ]
+;    if mfood? = 1 [
+;      set pcolor yellow  ;colors medium density piles
+;    ]
+;    if sfood? = 1 [
+;      set pcolor 7  ;colors random seeds 
+;    ]
+;    if ofood? = 1 [
+;      set pcolor 123  ;colors low density piles
+;    ]
   ]
   ask humans [  ;resets all humans by removing existing humans
     die
@@ -73,168 +73,168 @@ end
 
 
 
-to create_large_food ;function for dense food pile creation
-  
-  set pile_radius 100 ;creates a circle with an area of exactly 256 pixels
-  
-  ask patches [
-    set pcolor green ;;colors entire world green
-    if pxcor < 1 and pxcor > -1 [
-      set pcolor black
-    ]
-  ] 
-  let xl 1  ;local variable for the x location of large food
-  let yl 1  ;local variable for the y location of large food
-  let pile_true 1  ;defines feasible location for piles
-  let head 1
-  let pile_count 0  ;counter for existing piles
-  while [pile_count < Large_piles] [ ;iterates function until number of food piles is equal to the number in the slider
-    set pile_true 1 
-    set xl (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
-    set yl (-90 + random 181)
-    ask patch xl yl [
-      repeat 360 [
-        set head (head + 1) ;scans all patches in a circle around pile location
-        ask patch-at-heading-and-distance head 10 [ 
-          if pcolor = red [
-            set pile_true 0  ;checks to see if piles are being generated ontop of each other
-          ]
-        ]
-      ]
-    ] 
-    if pile_true = 1 [
-      set pile_count (pile_count + 1) ;increments pile counter
-      ask patches [
-        if (distancexy xl yl) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
-          set pcolor red
-          ask patch-at 200 0 [
-            set pcolor red
-          ]
-        ]
-      ]
-    ]
-  ]
-  set lfood_counter1 count patches with [pcolor = red and pxcor < 0]
-  set lfood_counter2 count patches with [pcolor = red and pxcor > 0]
-end
+;to create_large_food ;function for dense food pile creation
+;  
+;  set pile_radius 100 ;creates a circle with an area of exactly 256 pixels
+;  
+;  ask patches [
+;    set pcolor green ;;colors entire world green
+;    if pxcor < 1 and pxcor > -1 [
+;      set pcolor black
+;    ]
+;  ] 
+;  let xl 1  ;local variable for the x location of large food
+;  let yl 1  ;local variable for the y location of large food
+;  let pile_true 1  ;defines feasible location for piles
+;  let head 1
+;  let pile_count 0  ;counter for existing piles
+;  while [pile_count < Large_piles] [ ;iterates function until number of food piles is equal to the number in the slider
+;    set pile_true 1 
+;    set xl (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
+;    set yl (-90 + random 181)
+;    ask patch xl yl [
+;      repeat 360 [
+;        set head (head + 1) ;scans all patches in a circle around pile location
+;        ask patch-at-heading-and-distance head 10 [ 
+;          if pcolor = red [
+;            set pile_true 0  ;checks to see if piles are being generated ontop of each other
+;          ]
+;        ]
+;      ]
+;    ] 
+;    if pile_true = 1 [
+;      set pile_count (pile_count + 1) ;increments pile counter
+;      ask patches [
+;        if (distancexy xl yl) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
+;          set pcolor red
+;          ask patch-at 200 0 [
+;            set pcolor red
+;          ]
+;        ]
+;      ]
+;    ]
+;  ]
+;  set lfood_counter1 count patches with [pcolor = red and pxcor < 0]
+;  set lfood_counter2 count patches with [pcolor = red and pxcor > 0]
+;end
 
 
-to create_medium_food ;function for medium density food creation
-  
-  set pile_radius 9.027033336764101
-  let xm 1 ;pile x coordinate
-  let ym 1 ;pile y coordinate
-  let pile_true 1 ;checks for pile location validity
-  let head 1
-  let pile_count 0 ;value to determine number of generated piles
-  
-  while [pile_count < Medium_piles] [ ;iterates function until number of food piles is equal to the number in the slider
-    set pile_true 1
-    set xm (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
-    set ym (-90 + random 181)
-    ask patch xm ym [
-      repeat 360 [
-        set head (head + 1) ;scans all patches in a circle around pile location
-        ask patch-at-heading-and-distance head 10 [ 
-          if pcolor = red or pcolor = yellow [ ;checks to see if piles are being generated ontop of each other
-            set pile_true 0
-          ]
-        ]
-      ]
-    ]
-    if pile_true = 1 [
-      set pile_count (pile_count + 1) ;increments pile counter
-      ask patches [
-        if (distancexy xm ym) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
-          if random 4 < 1 [
-            set pcolor yellow
-            ask patch-at 200 0 [
-              set pcolor yellow
-            ]
-          ] 
-        ]
-      ]
-    ]
-  ]
-  set mfood_counter1 count patches with [pcolor = yellow and pxcor < 0]
-  set mfood_counter2 count patches with [pcolor = yellow and pxcor > 0]
-end
-
-
-
-to create_other_food ;function for medium density food creation
-  
-  set pile_radius 9.027033336764101
-  let xo 1 ;pile x coordinate
-  let yo  1 ;pile y coordinate
-  let pile_true 1 ;checks for pile location validity
-  let head 1
-  let pile_count 0 ;value to determine number of generated piles
-  
-  while [pile_count < Low_density_piles] [ ;iterates function until number of food piles is equal to the number in the slider
-    set pile_true 1
-    set xo (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
-    set yo (-90 + random 181)
-    ask patch xo yo [
-      repeat 360 [
-        set head (head + 1) ;scans all patches in a circle around pile location
-        ask patch-at-heading-and-distance head 10 [ 
-          if pcolor = red or pcolor = yellow or pcolor = 123 [ ;checks to see if piles are being generated ontop of each other
-            set pile_true 0
-          ]
-        ]
-      ]
-    ]
-    if pile_true = 1 [
-      set pile_count (pile_count + 1) ;increments pile counter
-      ask patches [
-        if (distancexy xo yo) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
-          if random 16 < 1 [
-            set pcolor 123
-            ask patch-at 200 0 [
-              set pcolor 123
-            ]
-          ] 
-        ]
-      ]
-    ]
-  ]
-  set sfood_counter1 count patches with [pcolor = 123 and pxcor < 0]
-  set sfood_counter2 count patches with [pcolor = 123 and pxcor > 0]
-end
-
-
-to create_small_food
-  
-  let num 0
-  while [num < Random_seeds] [  ;;colors individual patches until he total number is 512
-    ask one-of patches [ 
-      if pcolor = green [ ;will only generate on places without pre-existing food
-        if pxcor < -1 and pxcor > -198 [
-          set pcolor 7 
-          ask patch-at 200 0 [
-            set pcolor 7
-          ]
-          set num (num + 1)  ;increments sparse food counter
-        ]
-      ]
-    ]
-  ]
-  set rfood_counter1 count patches with [pcolor = 7 and pxcor < 0]
-  set rfood_counter2 count patches with [pcolor = 7 and pxcor > 0]
-end
+;to create_medium_food ;function for medium density food creation
+;  
+;  set pile_radius 9.027033336764101
+;  let xm 1 ;pile x coordinate
+;  let ym 1 ;pile y coordinate
+;  let pile_true 1 ;checks for pile location validity
+;  let head 1
+;  let pile_count 0 ;value to determine number of generated piles
+;  
+;  while [pile_count < Medium_piles] [ ;iterates function until number of food piles is equal to the number in the slider
+;    set pile_true 1
+;    set xm (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
+;    set ym (-90 + random 181)
+;    ask patch xm ym [
+;      repeat 360 [
+;        set head (head + 1) ;scans all patches in a circle around pile location
+;        ask patch-at-heading-and-distance head 10 [ 
+;          if pcolor = red or pcolor = yellow [ ;checks to see if piles are being generated ontop of each other
+;            set pile_true 0
+;          ]
+;        ]
+;      ]
+;    ]
+;    if pile_true = 1 [
+;      set pile_count (pile_count + 1) ;increments pile counter
+;      ask patches [
+;        if (distancexy xm ym) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
+;          if random 4 < 1 [
+;            set pcolor yellow
+;            ask patch-at 200 0 [
+;              set pcolor yellow
+;            ]
+;          ] 
+;        ]
+;      ]
+;    ]
+;  ]
+;  set mfood_counter1 count patches with [pcolor = yellow and pxcor < 0]
+;  set mfood_counter2 count patches with [pcolor = yellow and pxcor > 0]
+;end
+;
+;
+;
+;to create_other_food ;function for medium density food creation
+;  
+;  set pile_radius 9.027033336764101
+;  let xo 1 ;pile x coordinate
+;  let yo  1 ;pile y coordinate
+;  let pile_true 1 ;checks for pile location validity
+;  let head 1
+;  let pile_count 0 ;value to determine number of generated piles
+;  
+;  while [pile_count < Low_density_piles] [ ;iterates function until number of food piles is equal to the number in the slider
+;    set pile_true 1
+;    set xo (-190 + random 180)   ;if piles are generated ontop of each other, picks a new random pile location
+;    set yo (-90 + random 181)
+;    ask patch xo yo [
+;      repeat 360 [
+;        set head (head + 1) ;scans all patches in a circle around pile location
+;        ask patch-at-heading-and-distance head 10 [ 
+;          if pcolor = red or pcolor = yellow or pcolor = 123 [ ;checks to see if piles are being generated ontop of each other
+;            set pile_true 0
+;          ]
+;        ]
+;      ]
+;    ]
+;    if pile_true = 1 [
+;      set pile_count (pile_count + 1) ;increments pile counter
+;      ask patches [
+;        if (distancexy xo yo) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
+;          if random 16 < 1 [
+;            set pcolor 123
+;            ask patch-at 200 0 [
+;              set pcolor 123
+;            ]
+;          ] 
+;        ]
+;      ]
+;    ]
+;  ]
+;  set sfood_counter1 count patches with [pcolor = 123 and pxcor < 0]
+;  set sfood_counter2 count patches with [pcolor = 123 and pxcor > 0]
+;end
+;
+;
+;to create_small_food
+;  
+;  let num 0
+;  while [num < Random_seeds] [  ;;colors individual patches until he total number is 512
+;    ask one-of patches [ 
+;      if pcolor = green [ ;will only generate on places without pre-existing food
+;        if pxcor < -1 and pxcor > -198 [
+;          set pcolor 7 
+;          ask patch-at 200 0 [
+;            set pcolor 7
+;          ]
+;          set num (num + 1)  ;increments sparse food counter
+;        ]
+;      ]
+;    ]
+;  ]
+;  set rfood_counter1 count patches with [pcolor = 7 and pxcor < 0]
+;  set rfood_counter2 count patches with [pcolor = 7 and pxcor > 0]
+;end
 
 
 
 to setup_humans
   
   set-default-shape humans "dot" ;human shape
-  ask patch 100 0 [
+  ask patch 0 0 [
     sprout-humans city_size        
   ]  
-  ask patch -100 0 [
-    sprout-humans city_size
-  ]
+;  ask patch -100 0 [
+;    sprout-humans city_size
+;  ]
   ask humans [
     set color black ;human color
     set ycor (-7 + random 14) ;human location
@@ -264,16 +264,17 @@ to go_density_recruit ;;function executed by the "run" button
   
   
   if  ticks > 5000 [  ;simulation resets after 5000 ticks
+    set food_collection_total 0
     set food_collection_right 0
     set food_collection_left 0
     clear-patches
     clear-all-plots
     clear-turtles
     reset-ticks
-    create_large_food
-    create_medium_food
-    create_small_food
-    create_other_food 
+;    create_large_food
+;    create_medium_food
+;    create_small_food
+;    create_other_food 
     setup_humans
   ]
   
@@ -284,19 +285,18 @@ to go_density_recruit ;;function executed by the "run" button
   
   ask humans [ ;splits the humans behavior into halves based on location.
     ;humans on the left will bring food to the left nest and humans on the right will bring food to the right nest.
-        
-    ifelse xcor > 0 [
-      set nestx 100
-    ]
-    [set nestx -100
-    ]
+      if  nestx != 0
+ [
+    set nestx 0
+ ]
+    
     
     
     
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
-      fd 1 
-    ]
+     fd 1 
+   ]
     
     ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
     ;;Different stimuli such as the presence of trails or food will cause humans to change their behaviors 
@@ -356,14 +356,14 @@ to return_home  ;function for human behavior when returning to the nest
   let x -1
   let y -1  
   let trail_follow? 0  
-  let x2 nestx
+  let x1 nestx
   
   ifelse (distancexy nestx 0) > 0 [  ;if human is not at nest, execute movement
     facexy nestx 0
     set curr_distance (distancexy nestx 0) ; registers current distance from nest
     rt random-normal 0 20  ;random wiggle movement
     ask patch-ahead 1 [
-      set new_distance (distancexy x2 0)  ;registers future position from nest
+      set new_distance (distancexy x1 0)  ;registers future position from nest
     ]
     if new_distance < curr_distance[ ;only moves if future position from nest is closer than current position
       face patch-ahead 1
@@ -373,14 +373,15 @@ to return_home  ;function for human behavior when returning to the nest
   ]
   
   [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the nest
-    ifelse xcor < 0 [
-      set food_collection_left (food_collection_left + 1) 
-      set food_totall (food_totall + 1)
-    ]
-    [ set food_collection_right (food_collection_right + 1)
-      set food_totalr (food_totalr + 1)
-    ]
-  ]   
+    if xcor = 0 [
+;      set food_collection_left (food_collection_left + 1) 
+;      set food_totall (food_totall + 1)
+;    ]
+
+    set food_collection_total (food_collection_total + 1)
+      set food_total (food_total + 1)
+    
+  ]  ] 
   set has_food? 0
   
   while [x < 2] [
@@ -435,9 +436,7 @@ to random_walk
   set color black
   let st_dev 0
   
-  ifelse pxcor > 0 [
-    set st_dev GAdev
-  ]
+  if pxcor = 0 
   [ set st_dev turn_while_searching
   ]  
   ;behavior executed during behavior 1
@@ -459,11 +458,12 @@ to evaporate_trail
 
     let evapo 0
     
-    ifelse pxcor > 0 [ ;defines trail evaporation consthuman based on GA and user input parameters
-      set evapo GAevap
-    ]
+    if pxcor = 0  ;defines trail evaporation consthuman based on GA and user input parameters
+     
+    
     [ set evapo Evaporation_rate
     ]
+
     
     set pheremone? (pheremone? * (1 - evapo))  ;pheremone evaporation function
     if pheremone? < .001 [set pheremone? 0]   ;if pheremone becomes almost undetectable, sets value to 0
@@ -517,11 +517,11 @@ to move_away
     [ ;probability to begin search is determined by GA and user parameters
       ifelse (random 10000 / 10000 < 1 - initial_expansion) 
       [ set behavior 1 ]
-      [ fd 1 ] ;if search mode is not engaged, moves outward at full speed
+      [ set behavior 1 ] ;if search mode is not engaged, moves outward at full speed
     ]
     [  ifelse (random 10000 / 10000 < 1 - GAexpand)
       [ set behavior 1 ]
-      [ fd 1 ];if search mode is not engaged, moves outward at full speed
+      [ set behavior 1 ];if search mode is not engaged, moves outward at full speed
     ]
   ]
     
@@ -540,11 +540,10 @@ to check_food
   set recruit 0
   set fidelity 0
   
-  ifelse xcor > 0 [  ;defines trail creation probabiity based on Ga and user inputs
-    set rec_factor GArecruit
+  if xcor = 0 [  ;defines trail creation probabiity based on Ga and user inputs
+    set rec_factor lay_a_trail
   ]
-  [ set rec_factor lay_a_trail
-  ]
+
   
   ask patch-here [ ;collects food on a patch
     if pcolor = red or pcolor = yellow or pcolor = 7 or pcolor = 123[
@@ -554,36 +553,35 @@ to check_food
         ;decrements food counters and updates real-time graphs for each food source
         
         if pcolor = red [ ;dense food
-          ifelse pxcor < 0 [
+          if pxcor = 0 [
             set lfood_counter1 (lfood_counter1 - 1)
           ]
-          [ set lfood_counter2 (lfood_counter2 - 1)
-          ]
+
         ]
         
-        if pcolor = yellow [ ;medium density food
-          ifelse pxcor < 0 [
-            set mfood_counter1 (mfood_counter1 - 1)
-          ]
-          [ set mfood_counter2 (mfood_counter2 - 1)
-          ]
-        ]
-        
-        if pcolor = 7 [ ;low density food
-          ifelse pxcor < 0 [
-            set rfood_counter1 (rfood_counter1 - 1)
-          ]
-          [ set rfood_counter2 (rfood_counter2 - 1)
-          ]
-        ]
-        
-        if pcolor = 123 [ ;random food
-          ifelse pxcor < 0 [
-            set sfood_counter1 (sfood_counter1 - 1)
-          ]
-          [ set sfood_counter2 (sfood_counter2 - 1)
-          ]
-        ]
+;        if pcolor = yellow [ ;medium density food
+;          ifelse pxcor < 0 [
+;            set mfood_counter1 (mfood_counter1 - 1)
+;          ]
+;          [ set mfood_counter2 (mfood_counter2 - 1)
+;          ]
+;        ]
+;        
+;        if pcolor = 7 [ ;low density food
+;          ifelse pxcor < 0 [
+;            set rfood_counter1 (rfood_counter1 - 1)
+;          ]
+;          [ set rfood_counter2 (rfood_counter2 - 1)
+;          ]
+;        ]
+;        
+;        if pcolor = 123 [ ;random food
+;          ifelse pxcor < 0 [
+;            set sfood_counter1 (sfood_counter1 - 1)
+;          ]
+;          [ set sfood_counter2 (sfood_counter2 - 1)
+;          ]
+;        ]
       ]
     ]
   ]
@@ -617,7 +615,7 @@ to check_food
     [set behavior 3
     ]
   ]
-  ifelse xcor < 0 [ ;probability to use site fidelity or density recruitment upon finding a seed is determined by GA and user parameters
+  ifelse xcor = 0 [ ;probability to use site fidelity or density recruitment upon finding a seed is determined by GA and user parameters
     if random-float 1 < ((Site_fidelity / 100) + seed_count) [
       set fidelity 1
     ]
@@ -666,9 +664,8 @@ to scan_trail ;function to follow pheromone trails
   let nx nestx
   let tdrop 0
   
-  ifelse pxcor > 0 [
-    set tdrop GAtrail_drop ;assigns trail drop rate parameter to GA and user controlled values
-  ]
+  if pxcor = 0 
+
   [ set tdrop abandon_trail
   ]
   
@@ -745,64 +742,64 @@ to do-plotting-left
     set-current-plot-pen "large piles"
     plot-pen-down
     plotxy ticks lfood_counter1;count patches with [pcolor = red and pxcor < 0] ;plot high density food quhumanity in red
-    set-current-plot-pen "medium piles"
-    plot-pen-down
-    plotxy ticks mfood_counter1;count patches with [pcolor = yellow and pxcor < 0] ;plot medium density food quhumanity in yellow
-    set-current-plot-pen "random food"
-    plot-pen-down
-    plotxy ticks rfood_counter1;count patches with [pcolor =  7 and pxcor < 0] ;plot random food distribution quhumanity in white
-    set-current-plot-pen "sparse piles"
-    plot-pen-down
-    plotxy ticks sfood_counter1;count patches with [pcolor = 123 and pxcor < 0] ;plot low density food quhumanity in brown
+;    set-current-plot-pen "medium piles"
+;    plot-pen-down
+;    plotxy ticks mfood_counter1;count patches with [pcolor = yellow and pxcor < 0] ;plot medium density food quhumanity in yellow
+;    set-current-plot-pen "random food"
+;    plot-pen-down
+;    plotxy ticks rfood_counter1;count patches with [pcolor =  7 and pxcor < 0] ;plot random food distribution quhumanity in white
+;    set-current-plot-pen "sparse piles"
+;    plot-pen-down
+;    plotxy ticks sfood_counter1;count patches with [pcolor = 123 and pxcor < 0] ;plot low density food quhumanity in brown
   ]
   if not plot? [   
     ;clear-all-plots    ;if plot switch is off, clears all plot lines and stops drawing plot values
     set-current-plot-pen "large piles"
     plot-pen-up 
-    set-current-plot-pen "medium piles"
-    plot-pen-up 
-    set-current-plot-pen "random food"
-    plot-pen-up 
-    set-current-plot-pen "sparse piles"
-    plot-pen-up 
+;    set-current-plot-pen "medium piles"
+;    plot-pen-up 
+;    set-current-plot-pen "random food"
+;    plot-pen-up 
+;    set-current-plot-pen "sparse piles"
+;    plot-pen-up 
   ]
 end
 
-to do-plotting-right
-  set-current-plot "GA human city" ;plot name
-  if plot_2? [
-    set-current-plot-pen "large piles"
-    plot-pen-down
-    plotxy ticks lfood_counter2 ;plot high density food quhumanity in red
-    set-current-plot-pen "medium piles"
-    plot-pen-down
-    plotxy ticks mfood_counter2 ;plot medium density food quhumanity in yellow
-    set-current-plot-pen "random food"
-    plot-pen-down
-    plotxy ticks rfood_counter2 ;plot random food distribution quhumanity in white
-    set-current-plot-pen "sparse piles"
-    plot-pen-down
-    plotxy ticks sfood_counter2 ;plot low density food quhumanity in brown
-  ]
-  if not plot_2? [   ;if plot switch is off stops drawing plot values
-    set-current-plot-pen "large piles"
-    plot-pen-up 
-    set-current-plot-pen "medium piles"
-    plot-pen-up 
-    set-current-plot-pen "random food"
-    plot-pen-up 
-    set-current-plot-pen "sparse piles"
-    plot-pen-up 
-  ]
-end
+;to do-plotting-right
+;  set-current-plot "GA human city" ;plot name
+;  if plot_2? [
+;    set-current-plot-pen "large piles"
+;    plot-pen-down
+;;    plotxy ticks lfood_counter2 ;plot high density food quhumanity in red
+;;    set-current-plot-pen "medium piles"
+;;    plot-pen-down
+;;    plotxy ticks mfood_counter2 ;plot medium density food quhumanity in yellow
+;;    set-current-plot-pen "random food"
+;;    plot-pen-down
+;;    plotxy ticks rfood_counter2 ;plot random food distribution quhumanity in white
+;;    set-current-plot-pen "sparse piles"
+;;    plot-pen-down
+;;    plotxy ticks sfood_counter2 ;plot low density food quhumanity in brown
+;  ]
+;  if not plot_2? [   ;if plot switch is off stops drawing plot values
+;    set-current-plot-pen "large piles"
+;    plot-pen-up 
+;;    set-current-plot-pen "medium piles"
+;;    plot-pen-up 
+;;    set-current-plot-pen "random food"
+;;    plot-pen-up 
+;;    set-current-plot-pen "sparse piles"
+;;    plot-pen-up 
+;  ]
+;end
 
 to save_pile_config
   
   ask patches [
     set lfood? 0 ;resets all different pile configurations to 0
-    set mfood? 0
-    set sfood? 0
-    set ofood? 0    
+;    set mfood? 0
+;    set sfood? 0
+;    set ofood? 0    
     if pcolor = 7 [set sfood? 1]  ;defines existing food locations and stores them in variables
     if pcolor = yellow [set mfood? 1]
     if pcolor = red [set lfood? 1]
@@ -864,7 +861,7 @@ City_size
 City_size
 1
 1000
-20
+1000
 1
 1
 ants
@@ -876,7 +873,7 @@ BUTTON
 466
 275
 Run
-go_density_recruit\ndo-plotting-right\ndo-plotting-left\n;test
+go_density_recruit\n;do-plotting-right\ndo-plotting-left\n;test
 T
 1
 T
@@ -903,10 +900,10 @@ NIL
 HORIZONTAL
 
 PLOT
-497
-453
-904
-578
+681
+454
+1088
+579
 User controlled human city
 time
 food 
@@ -929,40 +926,10 @@ MONITOR
 1308
 454
 food collected
-food_collection_right
+food_collection_total
 0
 1
 11
-
-SLIDER
-102
-101
-277
-134
-Medium_piles
-Medium_piles
-0
-20
-0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-102
-59
-276
-92
-Large_piles
-Large_piles
-0
-5
-0
-1
-1
-NIL
-HORIZONTAL
 
 SLIDER
 290
@@ -1004,21 +971,6 @@ Setup
 0.0
 1
 
-SLIDER
-291
-59
-465
-92
-Random_seeds
-Random_seeds
-0
-35000
-0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
 102
 189
@@ -1054,13 +1006,13 @@ NIL
 1
 
 SWITCH
-813
-539
-903
-572
+1087
+545
+1177
+578
 plot?
 plot?
-1
+0
 1
 -1000
 
@@ -1080,21 +1032,6 @@ NIL
 HORIZONTAL
 
 SLIDER
-291
-101
-464
-134
-Low_density_piles
-Low_density_piles
-0
-40
-0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
 289
 377
 482
@@ -1103,54 +1040,11 @@ Turn_while_searching
 Turn_while_searching
 0
 1
-0.23
+1
 .01
 1
 NIL
 HORIZONTAL
-
-PLOT
-904
-453
-1309
-578
-GA human city
-food
-time
-0.0
-600.0
-0.0
-300.0
-true
-true
-"" ""
-PENS
-"large piles" 1.0 0 -2674135 true "" ""
-"medium piles" 1.0 0 -1184463 true "" ""
-"sparse piles" 1.0 0 -5825686 true "" ""
-"random food" 1.0 0 -16777216 true "" ""
-
-SWITCH
-1216
-541
-1307
-574
-plot_2?
-plot_2?
-1
-1
--1000
-
-MONITOR
-497
-409
-587
-454
-food collected
-food_collection_left
-0
-1
-11
 
 SLIDER
 101
@@ -1161,7 +1055,7 @@ Density_Recruit
 Density_Recruit
 -100
 100
-60
+100
 .1
 1
 %
@@ -1183,41 +1077,15 @@ Site_fidelity
 HORIZONTAL
 
 MONITOR
-830
-409
-903
-454
+498
+410
+571
+455
 total food
-food_totall
+food_total
 17
 1
 11
-
-MONITOR
-905
-409
-978
-454
-total food
-food_totalr
-17
-1
-11
-
-SLIDER
-312
-19
-484
-52
-Food-Gerneral
-Food-Gerneral
-0
-100
-50
-1
-1
-NIL
-HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

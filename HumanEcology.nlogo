@@ -12,11 +12,6 @@ patches-own [sfood? mfood? lfood? ofood? pheremone? ]
 ;;main setup function;;;;;;;;;;main setup function;;;;;;;;;;main setup function;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to a_hole
-  
-end  
-  
-
 to setup_world
 
 __clear-all-and-reset-ticks       
@@ -1086,10 +1081,10 @@ food_total
 11
 
 BUTTON
-148
-102
-211
-135
+322
+79
+385
+112
 Hole
 go_density_recruit\ndo-plotting-left\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
 T
@@ -1098,6 +1093,23 @@ T
 OBSERVER
 NIL
 H
+NIL
+NIL
+1
+
+BUTTON
+141
+76
+289
+109
+Remove Pheromones
+ask patches [\n set pheremone? 0\n ]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
 NIL
 NIL
 1

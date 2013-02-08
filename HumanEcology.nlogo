@@ -12,27 +12,27 @@ patches-own [sfood? mfood? lfood? ofood? pheremone? ]
 ;;main setup function;;;;;;;;;;main setup function;;;;;;;;;;main setup function;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup_world
+to a_hole
   
-  ;; (for this model to work with NetLogo's new plotting features,
-  ;; __clear-all-and-reset-ticks should be replaced with clear-all at
-  ;; the beginning of your setup procedure and reset-ticks at the end
-  ;; of the procedure.)
-  __clear-all-and-reset-ticks   
-;  create_large_food
-;  create_medium_food
-;  create_small_food
-;  create_other_food 
+end  
+  
+
+to setup_world
+
+__clear-all-and-reset-ticks       
   setup_humans
   ask patches [
   set pcolor red
-;  
-;  if pxcor < 1 and pxcor > -1 
-;     [ set pcolor black
-;  ]
+  ]  
+  go_density_recruit
+  do-plotting-left
+  if ticks > 100 [
+    ask humans [
+      set behavior 3
+               ]
   ]
+  
 end
-
 
 to setup_save  ;function re-generates a perviously saved pile configuration
   
@@ -232,9 +232,7 @@ to setup_humans
   ask patch 0 0 [
     sprout-humans city_size        
   ]  
-;  ask patch -100 0 [
-;    sprout-humans city_size
-;  ]
+
   ask humans [
     set color black ;human color
     set ycor (-7 + random 14) ;human location
@@ -1086,6 +1084,23 @@ food_total
 17
 1
 11
+
+BUTTON
+148
+102
+211
+135
+Hole
+go_density_recruit\ndo-plotting-left\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
+T
+1
+T
+OBSERVER
+NIL
+H
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

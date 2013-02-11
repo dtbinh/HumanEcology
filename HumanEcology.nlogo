@@ -17,7 +17,7 @@ to setup_world
 __clear-all-and-reset-ticks       
   setup_humans
   ask patches [
-  set pcolor red
+  set pcolor 61
   ]  
   go_density_recruit
   do-plotting-left
@@ -38,7 +38,7 @@ to setup_save  ;function re-generates a perviously saved pile configuration
 ;      set pcolor black
 ;    ]  
     if lfood? = 1 [
-      set pcolor red  ;colors red dense piles
+      set pcolor 61  ;colors 61 dense piles
     ]
 ;    if mfood? = 1 [
 ;      set pcolor yellow  ;colors medium density piles
@@ -91,7 +91,7 @@ end
 ;      repeat 360 [
 ;        set head (head + 1) ;scans all patches in a circle around pile location
 ;        ask patch-at-heading-and-distance head 10 [ 
-;          if pcolor = red [
+;          if pcolor = 61 [
 ;            set pile_true 0  ;checks to see if piles are being generated ontop of each other
 ;          ]
 ;        ]
@@ -101,16 +101,16 @@ end
 ;      set pile_count (pile_count + 1) ;increments pile counter
 ;      ask patches [
 ;        if (distancexy xl yl) <= pile_radius [ ;;creates a circle of food with area equivalent to 256 seeds
-;          set pcolor red
+;          set pcolor 61
 ;          ask patch-at 200 0 [
-;            set pcolor red
+;            set pcolor 61
 ;          ]
 ;        ]
 ;      ]
 ;    ]
 ;  ]
-;  set lfood_counter1 count patches with [pcolor = red and pxcor < 0]
-;  set lfood_counter2 count patches with [pcolor = red and pxcor > 0]
+;  set lfood_counter1 count patches with [pcolor = 61 and pxcor < 0]
+;  set lfood_counter2 count patches with [pcolor = 61 and pxcor > 0]
 ;end
 
 
@@ -131,7 +131,7 @@ end
 ;      repeat 360 [
 ;        set head (head + 1) ;scans all patches in a circle around pile location
 ;        ask patch-at-heading-and-distance head 10 [ 
-;          if pcolor = red or pcolor = yellow [ ;checks to see if piles are being generated ontop of each other
+;          if pcolor = 61 or pcolor = yellow [ ;checks to see if piles are being generated ontop of each other
 ;            set pile_true 0
 ;          ]
 ;        ]
@@ -174,7 +174,7 @@ end
 ;      repeat 360 [
 ;        set head (head + 1) ;scans all patches in a circle around pile location
 ;        ask patch-at-heading-and-distance head 10 [ 
-;          if pcolor = red or pcolor = yellow or pcolor = 123 [ ;checks to see if piles are being generated ontop of each other
+;          if pcolor = 61 or pcolor = yellow or pcolor = 123 [ ;checks to see if piles are being generated ontop of each other
 ;            set pile_true 0
 ;          ]
 ;        ]
@@ -246,7 +246,7 @@ end
 
 to go_density_recruit ;;function executed by the "run" button
   
-  ;Predetermined GA parameters are defined here  
+  ;P61etermined GA parameters are defined here  
   set GArecruit -.369849
   set GAtrail_drop .00114605
   set GAevap .0250054
@@ -460,7 +460,7 @@ to evaporate_trail
     
     set pheremone? (pheremone? * (1 - evapo))  ;pheremone evaporation function
     if pheremone? < .001 [set pheremone? 0]   ;if pheremone becomes almost undetectable, sets value to 0
-    if pcolor != red and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheremone is only visually represented on pixels without food
+    if pcolor != 61 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheremone is only visually represented on pixels without food
       if pheremone? >= 6 [set pcolor 99]  
       if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]   ;color gets darker as pheremone gets weaker
       if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
@@ -539,13 +539,13 @@ to check_food
 
   
   ask patch-here [ ;collects food on a patch
-    if pcolor = red or pcolor = yellow or pcolor = 7 or pcolor = 123[
+    if pcolor = 61 or pcolor = yellow or pcolor = 7 or pcolor = 123[
       if count turtles-here >= 1  [
         set food? 1
         
         ;decrements food counters and updates real-time graphs for each food source
         
-        if pcolor = red [ ;dense food
+        if pcolor = 61 [ ;dense food
           if pxcor = 0 [
             set lfood_counter1 (lfood_counter1 - 1)
           ]
@@ -589,7 +589,7 @@ to check_food
         if (pxcor + x) > (- world-width / 2 + 1) and (pxcor + x) < (world-width / 2 - 1) [
           if (pycor + y) > (- world-height / 2 + 1) and (pycor + y) < (world-height / 2 - 1) [
             ask patch-at x y [
-              if pcolor = red or pcolor = yellow or pcolor = 7 or pcolor = 123[
+              if pcolor = 61 or pcolor = yellow or pcolor = 7 or pcolor = 123[
                 set seed_count (seed_count + 1) ;number of uncollected food nearby
               ]
             ]
@@ -707,7 +707,7 @@ to color_trail
     if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the nest
       ;function to lay down pheremone during behvaior 3
       set pheremone? (pheremone? + 1)  ;increments pheremone by 1 every tick
-      if pcolor != red and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheremone on pixels without food
+      if pcolor != 61 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheremone on pixels without food
         if pheremone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheremone strength
         if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]
         if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
@@ -734,7 +734,7 @@ to do-plotting-left
   if plot? [
     set-current-plot-pen "large piles"
     plot-pen-down
-    plotxy ticks lfood_counter1;count patches with [pcolor = red and pxcor < 0] ;plot high density food quhumanity in red
+    plotxy ticks lfood_counter1;count patches with [pcolor = 61 and pxcor < 0] ;plot high density food quhumanity in 61
 ;    set-current-plot-pen "medium piles"
 ;    plot-pen-down
 ;    plotxy ticks mfood_counter1;count patches with [pcolor = yellow and pxcor < 0] ;plot medium density food quhumanity in yellow
@@ -763,7 +763,7 @@ end
 ;  if plot_2? [
 ;    set-current-plot-pen "large piles"
 ;    plot-pen-down
-;;    plotxy ticks lfood_counter2 ;plot high density food quhumanity in red
+;;    plotxy ticks lfood_counter2 ;plot high density food quhumanity in 61
 ;;    set-current-plot-pen "medium piles"
 ;;    plot-pen-down
 ;;    plotxy ticks mfood_counter2 ;plot medium density food quhumanity in yellow
@@ -795,7 +795,7 @@ to save_pile_config
 ;    set ofood? 0    
     if pcolor = 7 [set sfood? 1]  ;defines existing food locations and stores them in variables
     if pcolor = yellow [set mfood? 1]
-    if pcolor = red [set lfood? 1]
+    if pcolor = 61 [set lfood? 1]
     if pcolor = 123  [set ofood? 1]
   ]
   
@@ -854,10 +854,10 @@ City_size
 City_size
 1
 1000
-1000
+211
 1
 1
-ants
+humans
 HORIZONTAL
 
 BUTTON
@@ -886,7 +886,7 @@ Evaporation_rate
 Evaporation_rate
 .0001
 .1
-1.0E-4
+0.0998
 .0001
 1
 NIL
@@ -948,7 +948,7 @@ Lay_a_trail
 Lay_a_trail
 -9
 1
-1
+-9
 .01
 1
 NIL

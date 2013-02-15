@@ -1,5 +1,5 @@
 globals [food_collection_left food_collection_right food_collection_total predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAdev GAevap GArecruit GAtrail_drop GAtrail GAsite GAexpand
-         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total]
+         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total movement_total kilojoules_total]
 
 breed [humans human]
 
@@ -17,7 +17,7 @@ to setup_world
 __clear-all-and-reset-ticks       
   setup_humans
   ask patches [
-  set pcolor 61
+  set pcolor 62
   ]  
   go_density_recruit
   do-plotting-left
@@ -26,7 +26,12 @@ __clear-all-and-reset-ticks
       set behavior 3
                ]
   ]
+  set kilojoules_total 15.56448 ; from 0.06 Cal/min/kg expended times 62.0 kg avg. weight times 4.184 Cal->kilojoule; assuming each tick is a minute
   
+  ; from http://www.acefitness.org/updateable/update_display.aspx?pageID=593 and http://www.biomedcentral.com/1471-2458/12/439/abstract; waiting on more scientific sources
+  ;;scale to gigajoules, maybe? Seems huge-scale. Maybe to Watts?
+  ;;updateme
+  ;;citeme
 end
 
 to setup_save  ;function re-generates a perviously saved pile configuration
@@ -36,7 +41,7 @@ to setup_save  ;function re-generates a perviously saved pile configuration
     set pcolor green  ;refreshes the world in base green color  
 
     if lfood? = 1 [
-      set pcolor 61  ;colors 61 dense piles
+      set pcolor 62  ;colors 62 dense piles
     ]
   ]
   ask humans [  ;resets all humans by removing existing humans
@@ -78,7 +83,7 @@ end
 
 to go_density_recruit ;;function executed by the "run" button
   
-  ;P61etermined GA parameters are defined here  
+  ;P62etermined GA parameters are defined here  
   set GArecruit -.369849
   set GAtrail_drop .00114605
   set GAevap .0250054
@@ -116,7 +121,8 @@ to go_density_recruit ;;function executed by the "run" button
     
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
-     fd 1 
+     fd 1
+     set movement_total (movement_total + 1) 
    ]
     
     ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
@@ -158,7 +164,8 @@ to go_density_recruit ;;function executed by the "run" button
       find_food
     ]
   ]
-  
+  set kilojoules_total (kilojoules_total * movement_total / 1000) ;should work
+  ;;checkme
   tick ;next time step
   
 end
@@ -229,6 +236,7 @@ to return_home  ;function for human behavior when returning to the nest
         if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheremone to follow current pheremone trail
           face patch-ahead 1
           fd distance patch-ahead 1 ;moves onto 1 patch ahead
+          set movement_total ((movement_total + 1) )
           setxy pxcor pycor ;centers on current patch
           set behavior 2
         ]
@@ -265,6 +273,9 @@ to random_walk
     rt random-normal 0 (st_dev * 180 / pi)
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
+  set movement_total (movement_total + 1) 
+  ;possibly set it to +.25? Unfamiliar with how decimals + move works
+  ;;fixme
   
 end
 
@@ -288,7 +299,7 @@ to evaporate_trail
     
     set pheremone? (pheremone? * (1 - evapo))  ;pheremone evaporation function
     if pheremone? < .001 [set pheremone? 0]   ;if pheremone becomes almost undetectable, sets value to 0
-    if pcolor != 61 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheremone is only visually represented on pixels without food
+    if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheremone is only visually represented on pixels without food
       if pheremone? >= 6 [set pcolor 99]  
       if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]   ;color gets darker as pheremone gets weaker
       if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
@@ -315,6 +326,7 @@ to find_food
   facexy foodx foody ;moves towards last known food location
   rt (-20 + random 40)
   fd 1
+  set movement_total (movement_total + 1) 
   setxy xcor ycor
   
   
@@ -367,13 +379,13 @@ to check_food
 
   
   ask patch-here [ ;collects food on a patch
-    if pcolor = 61 or pcolor = yellow or pcolor = 7 or pcolor = 123[
+    if pcolor = 62 or pcolor = yellow or pcolor = 7 or pcolor = 123[
       if count turtles-here >= 1  [
         set food? 1
         
         ;decrements food counters and updates real-time graphs for each food source
         
-        if pcolor = 61 [ ;dense food
+        if pcolor = 62 [ ;dense food
           if pxcor = 0 [
             set lfood_counter1 (lfood_counter1 - 1)
           ]
@@ -393,7 +405,7 @@ to check_food
         if (pxcor + x) > (- world-width / 2 + 1) and (pxcor + x) < (world-width / 2 - 1) [
           if (pycor + y) > (- world-height / 2 + 1) and (pycor + y) < (world-height / 2 - 1) [
             ask patch-at x y [
-              if pcolor = 61 or pcolor = yellow or pcolor = 7 or pcolor = 123[
+              if pcolor = 62 or pcolor = yellow or pcolor = 7 or pcolor = 123[
                 set seed_count (seed_count + 1) ;number of uncollected food nearby
               ]
             ]
@@ -485,6 +497,7 @@ to scan_trail ;function to follow pheromone trails
         if dist >= distancexy nestx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
+          set movement_total (movement_total + 1) 
           setxy pxcor pycor
         ]          
       ]
@@ -511,7 +524,7 @@ to color_trail
     if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the nest
       ;function to lay down pheremone during behvaior 3
       set pheremone? (pheremone? + 1)  ;increments pheremone by 1 every tick
-      if pcolor != 61 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheremone on pixels without food
+      if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheremone on pixels without food
         if pheremone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheremone strength
         if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]
         if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
@@ -538,7 +551,7 @@ to do-plotting-left
   if plot? [
     set-current-plot-pen "large piles"
     plot-pen-down
-    plotxy ticks lfood_counter1;count patches with [pcolor = 61 and pxcor < 0] ;plot high density food quhumanity in 61
+    plotxy ticks lfood_counter1;count patches with [pcolor = 62 and pxcor < 0] ;plot high density food quhumanity in 62
   ]
   if not plot? [   
     ;clear-all-plots    ;if plot switch is off, clears all plot lines and stops drawing plot values
@@ -553,7 +566,7 @@ to save_pile_config
     set lfood? 0 ;resets all different pile configurations to 0  
     if pcolor = 7 [set sfood? 1]  ;defines existing food locations and stores them in variables
     if pcolor = yellow [set mfood? 1]
-    if pcolor = 61 [set lfood? 1]
+    if pcolor = 62 [set lfood? 1]
     if pcolor = 123  [set ofood? 1]
   ]
   
@@ -871,6 +884,28 @@ NIL
 NIL
 NIL
 1
+
+MONITOR
+570
+410
+670
+455
+total movement
+movement_total
+17
+1
+11
+
+MONITOR
+670
+410
+835
+455
+total kilojoules
+kilojoules_total
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?

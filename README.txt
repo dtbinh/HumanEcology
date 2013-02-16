@@ -25,7 +25,6 @@ More information is available on github.com/nightcaptain/HumanEcology, our infor
   ** Do when able **
      - Delete missed comments; unused variables; useless functions;; splitscreen remnants
      - Change patch colors of pheromones to roadlike colours
-     - Rename instances of "nest" to city; other semantic changes
      
   ** Future ideas **
      - Creation of other settlements/cities
@@ -43,12 +42,11 @@ Team Members:
   Israel Montoya ()
   Nico Ponder (nightcaptain)
   RJ Rosa (RonaldRosa)
-  Roderick Van Why ()
+  Roderick Van Why (izzythecubemaster)
 
 Mentors/Teachers:
   Andrew Hostetler
   Michael Harris
-  Neal Holtschulte
   Trevor Fristoe
   Sean Hammond
   Jeff Nikola

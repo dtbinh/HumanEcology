@@ -1,11 +1,11 @@
 globals [food_collection_left food_collection_right food_collection_total predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAdev GAevap GArecruit GAtrail_drop GAtrail GAsite GAexpand
-         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total movement_total kilojoules_total]
+         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total movement_total kilojoules_total time_ticks]
 
 breed [humans human]
 
-humans-own [trail_ahead behavior nestx boundary? has_food? foodx foody fidelity recruit]
+humans-own [trail_ahead behavior cityx boundary? has_food? foodx foody fidelity recruit]
 
-patches-own [sfood? mfood? lfood? ofood? pheremone? ]
+patches-own [sfood? mfood? lfood? ofood? pheromone? ]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,18 +26,12 @@ __clear-all-and-reset-ticks
       set behavior 3
                ]
   ]
-  set kilojoules_total 15.56448 ; from 0.06 Cal/min/kg expended times 62.0 kg avg. weight times 4.184 Cal->kilojoule; assuming each tick is a minute
-  
-  ; from http://www.acefitness.org/updateable/update_display.aspx?pageID=593 and http://www.biomedcentral.com/1471-2458/12/439/abstract; waiting on more scientific sources
-  ;;scale to gigajoules, maybe? Seems huge-scale. Maybe to Watts?
-  ;;updateme
-  ;;citeme
 end
 
 to setup_save  ;function re-generates a perviously saved pile configuration
   
   ask patches [  
-    set pheremone? 0  ;resets all pheromone values
+    set pheromone? 0  ;resets all pheromone values
     set pcolor green  ;refreshes the world in base green color  
 
     if lfood? = 1 [
@@ -105,15 +99,15 @@ to go_density_recruit ;;function executed by the "run" button
   ]
   
   
-  evaporate_trail   ;;;decrements all trails pheremone value (ctrl+F "evaporate trail" for details)
+  evaporate_trail   ;;;decrements all trails pheromone value (ctrl+F "evaporate trail" for details)
   
   
   
   ask humans [ ;splits the humans behavior into halves based on location.
-    ;humans on the left will bring food to the left nest and humans on the right will bring food to the right nest.
-      if  nestx != 0
+    ;humans on the left will bring food to the left city and humans on the right will bring food to the right city.
+      if  cityx != 0
  [
-    set nestx 0
+    set cityx 0
  ]
     
     
@@ -148,7 +142,7 @@ to go_density_recruit ;;function executed by the "run" button
     
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;;;;;;;;returning to the nest;;;;;;;;;;;
+    ;;;;;;;;;returning to the city;;;;;;;;;;;
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
     if behavior = 3 [  ;function for when the humans choose to return home without marking a trail (ctrl+F "return_home" for details)
@@ -164,7 +158,11 @@ to go_density_recruit ;;function executed by the "run" button
       find_food
     ]
   ]
-  set kilojoules_total (kilojoules_total * movement_total / 1000) ;should work
+  set time_ticks (time_ticks + 1)
+  set kilojoules_total (4 * 62 / 60 * .54 * 4.184 * city_size * time_ticks)
+  ;4 Calories per minute times 62 kg div. 60 seconds * .54 seconds is the Calories per human
+  ;Multiply by 4.184 to convert to kj
+  ;Multiply by city size to calculate for each human, then by time to avg.
   ;;checkme
   tick ;next time step
   
@@ -178,29 +176,29 @@ end
 
 
 
-to return_home  ;function for human behavior when returning to the nest 
+to return_home  ;function for human behavior when returning to the city 
   
   let max_pher 0
   let x -1
   let y -1  
   let trail_follow? 0  
-  let x1 nestx
+  let x1 cityx
   
-  ifelse (distancexy nestx 0) > 0 [  ;if human is not at nest, execute movement
-    facexy nestx 0
-    set curr_distance (distancexy nestx 0) ; registers current distance from nest
+  ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
+    facexy cityx 0
+    set curr_distance (distancexy cityx 0) ; registers current distance from city
     rt random-normal 0 20  ;random wiggle movement
     ask patch-ahead 1 [
-      set new_distance (distancexy x1 0)  ;registers future position from nest
+      set new_distance (distancexy x1 0)  ;registers future position from city
     ]
-    if new_distance < curr_distance[ ;only moves if future position from nest is closer than current position
+    if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
       forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
       setxy  pxcor pycor ;centers on the patch after moving
     ]
   ]
   
-  [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the nest
+  [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
     if xcor = 0 [
 ;      set food_collection_left (food_collection_left + 1) 
 ;      set food_totall (food_totall + 1)
@@ -214,11 +212,11 @@ to return_home  ;function for human behavior when returning to the nest
   
   while [x < 2] [
     set y -1
-    while [y < 2] [ ;while loops used to ask all surrounding patches for pheremone
-      if x != nestx or y != 0 [ ;does not look for pheromone on the nest
+    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
+      if x != cityx or y != 0 [ ;does not look for pheromone on the city
         ask patch-at x y [
-          if pheremone? > max_pher [ ;sets maximum pheremone value to highest surrounding pheremone value
-            set max_pher pheremone?
+          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
+            set max_pher pheromone?
           ]
         ]
       ]
@@ -228,12 +226,12 @@ to return_home  ;function for human behavior when returning to the nest
   ]
   ifelse recruit = 1 [
     ifelse max_pher > 0 [
-      set xcor nestx
+      set xcor cityx
       set ycor 0
-      while [xcor = nestx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the nest
+      while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
         set heading (random 360)
         scan_ahead   ;scans 1 patch at every random heading
-        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheremone to follow current pheremone trail
+        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
           face patch-ahead 1
           fd distance patch-ahead 1 ;moves onto 1 patch ahead
           set movement_total ((movement_total + 1) )
@@ -242,7 +240,7 @@ to return_home  ;function for human behavior when returning to the nest
         ]
       ]
     ]
-    [ set heading (random 360) ;if no pheremone is present, human enters search mode
+    [ set heading (random 360) ;if no pheromone is present, human enters search mode
       set behavior 1
     ]
   ]
@@ -286,7 +284,7 @@ end
 to evaporate_trail
   
   
-  ask patches with [pheremone? > 0] [
+  ask patches with [pheromone? > 0] [
 
     let evapo 0
     
@@ -297,18 +295,18 @@ to evaporate_trail
     ]
 
     
-    set pheremone? (pheremone? * (1 - evapo))  ;pheremone evaporation function
-    if pheremone? < .001 [set pheremone? 0]   ;if pheremone becomes almost undetectable, sets value to 0
-    if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheremone is only visually represented on pixels without food
-      if pheremone? >= 6 [set pcolor 99]  
-      if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]   ;color gets darker as pheremone gets weaker
-      if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
-      if pheremone? >= 3 and pheremone? < 4 [set pcolor 96]
-      if pheremone? >= 2 and pheremone? < 3 [set pcolor 95]
-      if pheremone? >= 1 and pheremone? < 2 [set pcolor 94]
-      if pheremone? >= .1  and pheremone? < 1 [set pcolor 93] 
-      if pheremone? >= .01 and pheremone? < .1 [set pcolor 92]
-      if pheremone? = 0 and pcolor = 92 [set pcolor green] 
+    set pheromone? (pheromone? * (1 - evapo))  ;pheromone evaporation function
+    if pheromone? < .001 [set pheromone? 0]   ;if pheromone becomes almost undetectable, sets value to 0
+    if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheromone is only visually represented on pixels without food
+      if pheromone? >= 6 [set pcolor 99]  
+      if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]   ;color gets darker as pheromone gets weaker
+      if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
+      if pheromone? >= 3 and pheromone? < 4 [set pcolor 96]
+      if pheromone? >= 2 and pheromone? < 3 [set pcolor 95]
+      if pheromone? >= 1 and pheromone? < 2 [set pcolor 94]
+      if pheromone? >= .1  and pheromone? < 1 [set pcolor 93] 
+      if pheromone? >= .01 and pheromone? < .1 [set pcolor 92]
+      if pheromone? = 0 and pcolor = 92 [set pcolor green] 
     ]
   ]
   
@@ -335,7 +333,7 @@ end
 to stop_search?
   
   
-  if random 10000 = 1 [  ;determines the percentage chance for humans to give up and return to the nest
+  if random 10000 = 1 [  ;determines the percentage chance for humans to give up and return to the city
     set behavior 3
   ]
   
@@ -444,12 +442,12 @@ end
 
 to scan_ahead ;humans look for pheromone directly infront of themselves
   
-  let nx nestx
+  let nx cityx
   
   if can-move? 1 [ ;checks for the world boundaries
     ask patch-ahead 1 [  
-      ifelse pheremone? > 0 [ ;if pheremone ahead, return true
-        set pher_ahead pheremone?
+      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
+        set pher_ahead pheromone?
         set dist distancexy nx 0
         ask humans [
           set trail_ahead 1
@@ -470,7 +468,7 @@ to scan_trail ;function to follow pheromone trails
   let max_pher 0
   let x2 xcor
   let y2 ycor
-  let nx nestx
+  let nx cityx
   let tdrop 0
   
   if pxcor = 0 
@@ -478,12 +476,12 @@ to scan_trail ;function to follow pheromone trails
   [ set tdrop abandon_trail
   ]
   
-  set curr_distance (distancexy nestx 0) ;will not follow trails that get closer to the nest
+  set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
   ask neighbors [
     if distancexy nx 0 > curr_distance[
-      if pheremone? > 0 [
-        if pheremone? > max_pher [
-          set max_pher pheremone?
+      if pheromone? > 0 [
+        if pheromone? > max_pher [
+          set max_pher pheromone?
         ]                
       ]
     ]
@@ -494,7 +492,7 @@ to scan_trail ;function to follow pheromone trails
       set color white ;turn white while following a trail for visual effect
       scan_ahead 
       if pher_ahead > random max_pher [
-        if dist >= distancexy nestx 0 [
+        if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
           set movement_total (movement_total + 1) 
@@ -521,17 +519,17 @@ end
 to color_trail
   
   ask patch-here [ 
-    if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the nest
-      ;function to lay down pheremone during behvaior 3
-      set pheremone? (pheremone? + 1)  ;increments pheremone by 1 every tick
-      if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheremone on pixels without food
-        if pheremone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheremone strength
-        if pheremone? >= 5 and pheremone? < 6 [set pcolor 98]
-        if pheremone? >= 4 and pheremone? < 5 [set pcolor 97]
-        if pheremone? >= 3 and pheremone? < 4 [set pcolor 96]
-        if pheremone? >= 2 and pheremone? < 3 [set pcolor 95]
-        if pheremone? >= 1 and pheremone? < 2  [set pcolor 94]
-        if pheremone? < 1  and pcolor = green [set pcolor 93]   ;will not draw pheremone over food, only green space
+    if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the city
+      ;function to lay down pheromone during behvaior 3
+      set pheromone? (pheromone? + 1)  ;increments pheromone by 1 every tick
+      if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheromone on pixels without food
+        if pheromone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheromone strength
+        if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]
+        if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
+        if pheromone? >= 3 and pheromone? < 4 [set pcolor 96]
+        if pheromone? >= 2 and pheromone? < 3 [set pcolor 95]
+        if pheromone? >= 1 and pheromone? < 2  [set pcolor 94]
+        if pheromone? < 1  and pcolor = green [set pcolor 93]   ;will not draw pheromone over food, only green space
                                                                 ; set trail_evaporation  trail_evaporation
       ]
     ]
@@ -663,27 +661,6 @@ Evaporation_rate
 NIL
 HORIZONTAL
 
-PLOT
-681
-454
-1088
-579
-User controlled human city
-time
-food 
-0.0
-600.0
-0.0
-300.0
-true
-true
-"" ""
-PENS
-"large piles" 1.0 0 -2674135 true "" ""
-"medium piles" 1.0 0 -1184463 true "" ""
-"sparse piles" 1.0 0 -5825686 true "" ""
-"random food" 1.0 0 -16777216 true "" ""
-
 MONITOR
 1216
 409
@@ -770,10 +747,10 @@ NIL
 1
 
 SWITCH
-1087
-545
-1177
-578
+290
+418
+380
+451
 plot?
 plot?
 0
@@ -873,8 +850,8 @@ BUTTON
 76
 289
 109
-Remove Pheromones
-ask patches [\n set pheremone? 0\n ]
+Remove trails
+ask patches [\n set pheromone? 0\n ]
 NIL
 1
 T
@@ -908,61 +885,26 @@ kilojoules_total
 11
 
 @#$#@#$#@
-## WHAT IS IT?
+##Problem Definition
+In two analyses of human ecology in cities, titled "Invention in the city: Increasing returns to patenting as a scaling function on metropolitan size" (2006) and "Growth, innovation, scaling, and the pace of life in cities," (2007) the author, Luis M.A. Bettencourt, discusses the effect of a city's size on its ecology. Bettencourt first found that larger cities are much more likely to house innovators and inventors, and showed a super-linear relationship between city size and the amount of inventors. Bettencourt then relates patterns of wealth, behavior, and infrastructure to city growth in the same superlinear manner, and postulates that this may promote "urbanism as a way of life." In essence, Bettencourt shows that larger cities have disproportionately more invention and wealth.
 
-This is a model of ant colony foraging behavior, based on the behavior and foraging ecology of harvester ants (genus Pogonomyrmex). This behavior is an example of a system where the simple behaviors of individuals (the ants) result in the emergent behavior of the complex system that is the ant colony. In particular, this model focuses on two strategies for information use and sharing:
+In these papers, however, the scaling relationship of food needs in city ecology is not mentioned. Given that other population-related qualities of the city follow a relationship of increasing returns, our team was curious about whether the food ecology of a city would be affected by the city's size in the same manner. This is especially important when discussing food production, gathering, and import into a metropolitan area. The goal of this project is to create a model that can accurately describe the scaling relationship between the two.
 
-- Pheromone recruitment, where ants leave trails from food sources back to the nest, which other ants can follow to find sites where other ants have found food previously.  This allows ants to share information about where food has been found, and where there may be more food.  
-- Site fidelity, where individual ants remember the location where they last found food, and return to that location to search for more food without recruiting other ants to the site.  This is a strategy for using individual rather than shared information.
+##Problem Solution
+The simulation will make clear the relationship between a city's size and the impact on its food ecology. We plan on creating the city with initial populations of increasing magnitude. Agents emerging from the city will seek out snd return with food from the land surrounding the city. The energetic cost of collecting and importing the goods will be measured against how many kilocalories the agent has returned with, and charted on real-time graphs. By examining how the city expands its food collection efforts, we should be able to examine the relationship between food ecology and city size.
 
-This model demonstrates how ant colony behavior can be more effective as a whole unit than as individual ants. The user is able to control the ants on the left side of the simulation, by adjusting sliders that control aspects of the ants' behavior, and see a real-time comparison to optimized ant behavior on the right side.
+##Progress to Date
+We have partnered with a team of ecologists and computer scientists at UNM. They are assisting us in developing the program, which is being written in NetLogo. Using their previous ecological models as guidelines and reference points, we are working on creating agents who follow an optimized search algorithm before returning to the city.
 
-## HOW IT WORKS
+##Expected Results
+After development is finished, the agents should be able to wander a distance from the city, and return after finding food. The area where they gathered the food from should degrade, and eventually replenish. The population within the city should suffer if their caloric intake is regularly not being met. The agents should have differing means of transport, and these means' ecology, specifically measured in energy spent per units of distances traveled per kilogram, should be analyzed.
 
-The ants in the simulation follow four distinct behaviors.
-
-- Initial expansion: At the beginning of the simulation, all ants start at the nest, and move away from the nest to cover ground and distribute themselves around their territory before beginning to search.  (Distance_to_walk slider)
-- Random search: Searching ants move at 1/4 their maximum speed (as when traveling away from or returning to the nest, following trails, or returning to known foraging sites) and make random turns while looking for food. (Turn_while_searching slider)
-- Returning to the nest: When they find food, ants return to the nest, and may draw pheromone or move towards the nest at full speed. (site_fidelity slider)  
-- Leaving the nest: Ants decide to follow pheromone trails from the nest, or to return to the last place the ant found food, or begin a random search for food at the nest. (Density_recruit, Lay_a_trail, and evaporation_rate sliders)
-
-The right side of the simulation is optimized using a genetic algorithm. Genetic algorithms are an optimization scheme inspired by natural selection.  The behavior of the ants in this simulation is controlled by the selection of various parameters (such as a parameter that determines how much ants turn as they search for food, or how fast pheromone trails evaporate from the grid) and the effectiveness of the ant behaviors at collecting food depends on these parameter values.  The genetic algorithm creates a random population of parameter sets, and tests each of these parameter sets for their ability to collect food quickly by running the model with each set of parameters.  It selects successful parameter sets, recombines them with other sets, and introduces occasional random mutation into each parameter.  It repeats this process over many generations until it converges on an optimal parameter set.
-
-In the simulation, the ant colony on the right side of the grid is controlled by the parameters selected by the genetic algorithm.  The colony on the left side is controlled by the user, via sliders that set the values for the parameters that determine the ants' behaviors.  Can you find parameter combinations that beat the genetic algorithm?  One approach may be to continulously tune parameters as the model runs to adjust the ants' behaviors to the food available on the grid over time.  This may allow more efficient food collection because the genetic algorithm cannot change its parameters from moment to moment.  It will be a greater challenge to find a single set of parameters that beat the genetic algorithm in the long term. 
-
-## HOW TO USE IT
-
-The simulation window is split into two halves. The right half is controlled by an optimized parameter set, and the left half is controlled by the user via the sliders. There are 7 sliders that alter behavior and 5 sliders that can change the initial setup. 
-
-The behavior sliders:
-
-- Initial_expansion determines how far ants travel from the nest at the beginning of each simulation.  This parameter determines the probability each tick that a traveling ant will stop traveling and begin to search.  With larger values, ants tend to begin searching closer to the nest; with smaller values, ants tend to begin searching farther away.  
-- Turn_while_searching determines how much ants turn during their random search for food. With high values, ants turn more and search more thoroughly in a local area; with low values, ants turn less and cover more distance.  
-- Lay_a_trail determines ants' likelihood of laying pheromone trails as they return to the nest after finding food.  With higher values, ants are more likely to leave trails.  A value of 1 means that ants will lay a pheromone trail every time they find food.  With values less than 1, the tendency to leave trails is also influenced by the presence of other food an ant senses nearby - ants more frequently leave trails to places where there is other food for nestmates to find.  
-- Site_fidelity determines ants' likelihood of deciding to return to the current location after delivering food to the nest.  This allows individual ants to make use of personal memory to return to places where they have found food previously, and where more food may be found.  As above, with higher values, ants are more likely to decide to return to the current location.  A value of 1 means ants return to the location every time they find food.  With values less than 1, this is also influenced by the presence of other food in the immediate area.  
-- Density_Recruit determines ants' likelihood of following pheromone trails, if they are present, from the nest after delivering food.  With increasing values, ants are more likely to follow trails from the nest.  This allows ants to travel to sites where food has been found by other ants.  Note that the decision to follow trails conflicts with the decision to return to the last site where the ant has found food, as an ant can't do both.  Therefore an optimal strategy for making use of both individual and shared information must strike a balance between these two.  Because ants with individual knowledge of sites where more food is present should return to those sites instead of following pheromone trails, an ant's tendency to follow trails from the nest decreases with the amount of other food in the area where it last found food.  
-- Abandon_trail determine the probability each tick that an ant following a pheromone trail will leave the trail and begin searching.  Ants in nature sometimes abandon pheromone trails before reaching their end in order to search for other nearby foods that have not been discovered yet.  
-- Trail_evaporation determines the rate that pheromone trails evaporate from the grid.  Pheromone trails evaporate so that ants tend to follow trails to places where food has been found more recently.  For high values, pheromone trails evaporate more quickly; for low values, pheromone trails are more permanent.
-
-The setup sliders influence: Colony size (ant_number) and food quantity (large_piles, low_density_piles, medium_piles, random_food)
-
-
-## THINGS TO NOTICE
-
-The simulation provides real time feedback through the graphs at the bottom of the screen and the boxes at the bottom of the runtime windows. The monitors give real time information about how much food has been collected on each side of the simulation. The graphs show how much of each food type is remaining. These graphs may be turned off to increase runtime speed.
-
-
-## THINGS TO TRY
-
-Can you beat the ideal colony?  
-The goal for the user in this simulation is to find a set of behaviors that can consistently beat the computer controlled counterpart.  Experiment with the sliders described in "How It Works" above.  Try different values for each slider one at a time and observe how it changes the behavior of the ants on the left side of the simulation.  After learning how each of the sliders changes the ant's behavior, can you come up with a different combination of parameter values that collects food faster than the genetic algorithm?  You may be able to beat the genetic algorithm by managing the sliders' values over time to change the ants behaviors according to circumstances within a particular run, such as when an ant discovers the large pile of seeds.  It may be a bigger challenge to find a single set of parameters that beat the genetic algorithm over many runs.
-
-If you can beat the computer with a set of parameters on a standard 50 ant colony, try to scale it up! Experiment with 10- or 100- ant colonies and see if they behave as effectivey if there are more or fewer ants. In addition to adding or subtracting ants, you can see how to optimize the collection behavior if there is more or less food. Is it easier to find new parameters that beat the genetic algorithm for colonies of different sizes or different food distributions?  Why might this be?
-
-
-## NETLOGO FEATURES
-
-Netlogo has numerous data exportation features and graphing capabilities. These are utilized in this model through the plots at the bottom of the screen. Additionally, the program can be made to export comprehensive data on each run to a word doument which can then be analyzed in Excel or Matlab.
+##Team Members
+Roderick Van Why
+Nico Ponder
+Israel Montoya
+Walid Hasan
+RJ Rosa
 
 
 

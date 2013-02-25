@@ -1,5 +1,5 @@
-globals [food_collection_left food_collection_right food_collection_total predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAdev GAevap GArecruit GAtrail_drop GAtrail GAsite GAexpand
-         rfood_counter1 rfood_counter2 sfood_counter1 sfood_counter2 mfood_counter1 mfood_counter2 lfood_counter1 lfood_counter2 food_totall food_totalr food_total movement_total kilojoules_total time_ticks]
+globals [food_collection_left food_collection_right predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand
+         lfood_counter1 food_total movement_total kilojoules_total time_ticks]
 
 breed [humans human]
 
@@ -20,7 +20,7 @@ __clear-all-and-reset-ticks
   set pcolor 62
   ]  
   go_density_recruit
-  do-plotting-left
+;  do-plotting-left
   if ticks > 100 [
     ask humans [
       set behavior 3
@@ -77,26 +77,9 @@ end
 
 to go_density_recruit ;;function executed by the "run" button
   
-  ;P62etermined GA parameters are defined here  
-  set GArecruit -.369849
-  set GAtrail_drop .00114605
-  set GAevap .0250054
-  set GAdev .269567
   set GAtrail .92328
   set GAsite 1.0
   set GAexpand 0.9836
-  
-  
-  if  ticks > 5000 [  ;simulation resets after 5000 ticks
-    set food_collection_total 0
-    set food_collection_right 0
-    set food_collection_left 0
-    clear-patches
-    clear-all-plots
-    clear-turtles
-    reset-ticks
-    setup_humans
-  ]
   
   
   evaporate_trail   ;;;decrements all trails pheromone value (ctrl+F "evaporate trail" for details)
@@ -199,15 +182,9 @@ to return_home  ;function for human behavior when returning to the city
   ]
   
   [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
-    if xcor = 0 [
-;      set food_collection_left (food_collection_left + 1) 
-;      set food_totall (food_totall + 1)
-;    ]
-
-    set food_collection_total (food_collection_total + 1)
       set food_total (food_total + 1)
     
-  ]  ] 
+      ] 
   set has_food? 0
   
   while [x < 2] [
@@ -543,21 +520,6 @@ end
 ;;;plotting and data-exporting;;;;;;;;plotting and data-exporting;;;;;;;;;;;;;;;;;plotting and data-exporting;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-to do-plotting-left
-  set-current-plot "User controlled human city" ;plot name
-  if plot? [
-    set-current-plot-pen "large piles"
-    plot-pen-down
-    plotxy ticks lfood_counter1;count patches with [pcolor = 62 and pxcor < 0] ;plot high density food quhumanity in 62
-  ]
-  if not plot? [   
-    ;clear-all-plots    ;if plot switch is off, clears all plot lines and stops drawing plot values
-    set-current-plot-pen "large piles"
-    plot-pen-up 
-  ]
-end
-
 to save_pile_config
   
   ask patches [
@@ -635,7 +597,7 @@ BUTTON
 466
 275
 Run
-go_density_recruit\n;do-plotting-right\ndo-plotting-left\n;test
+go_density_recruit\n;do-plotting-right\n;do-plotting-left\n;test
 T
 1
 T
@@ -662,12 +624,12 @@ NIL
 HORIZONTAL
 
 MONITOR
-1216
-409
-1308
-454
+503
+406
+581
+451
 food collected
-food_collection_total
+food_total
 0
 1
 11
@@ -817,24 +779,13 @@ Site_fidelity
 %
 HORIZONTAL
 
-MONITOR
-498
-410
-571
-455
-total food
-food_total
-17
-1
-11
-
 BUTTON
 322
 79
 385
 112
 Hole
-go_density_recruit\ndo-plotting-left\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
+go_density_recruit\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
 T
 1
 T
@@ -863,10 +814,10 @@ NIL
 1
 
 MONITOR
-570
-410
-670
-455
+580
+406
+680
+451
 total movement
 movement_total
 17
@@ -874,10 +825,10 @@ movement_total
 11
 
 MONITOR
-670
-410
-835
-455
+679
+406
+844
+451
 total kilojoules
 kilojoules_total
 17

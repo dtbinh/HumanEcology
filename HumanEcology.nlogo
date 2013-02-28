@@ -1,5 +1,7 @@
-globals [food_collection_left food_collection_right predatorx predatory pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand
-         lfood_counter1 food_total movement_total kilojoules_total time_ticks]
+globals [ pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
+   food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks]
+;first line are vars from original code
+;second line are vars we created
 
 breed [humans human]
 
@@ -67,6 +69,12 @@ to setup_humans
     set behavior 0 ;sets the humans to their initial behavior condition
     set size 1
   ]
+  
+  ;setting vars for calculation
+  set cal_per_min_kg 240 ;in units of Cal * 1/(sec*kg)
+  set kg_per_individual 62 ;average human body mass
+  set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
+  set sec_per_tick 0.54; based on program measurements
 end
 
 
@@ -142,11 +150,8 @@ to go_density_recruit ;;function executed by the "run" button
     ]
   ]
   set time_ticks (time_ticks + 1)
-  set kilojoules_total (4 * 62 / 60 * .54 * 4.184 * city_size * time_ticks)
-  ;4 Calories per minute times 62 kg div. 60 seconds * .54 seconds is the Calories per human
-  ;Multiply by 4.184 to convert to kj
-  ;Multiply by city size to calculate for each human, then by time to avg.
-  ;;checkme
+  set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * city_size * time_ticks)
+
   tick ;next time step
   
 end
@@ -585,7 +590,7 @@ City_size
 City_size
 1
 1000
-211
+1
 1
 1
 humans

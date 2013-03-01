@@ -5,7 +5,7 @@ globals [
    ]
 ;first line are vars from original code
 ;second line are vars we created to count kilojoules for humans
-;third line are vars added as part of the new breeds
+;third line are vars added as part of the new breeds, not includingbreed-owned
 
 breed [humans human]
 breed [horses horse]
@@ -46,7 +46,7 @@ to setup_save  ;function re-generates a perviously saved pile configuration
     set pcolor green  ;refreshes the world in base green color  
 
     if lfood? = 1 [
-      set pcolor 62  ;colors 62 dense piles
+      set pcolor 62  ;colors food green
     ]
   ]
   ask humans [  ;resets all humans by removing existing humans
@@ -113,30 +113,30 @@ to setup_vars ;;executed by setup
   set cal_per_min_kg 240 ;in units of Cal * 1/(sec*kg)
   set kg_per_individual 62 ;average human body mass
   set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
-  set sec_per_tick 0.54; based on program measurements
+  set sec_per_tick 60; based on program measurements
   
   set seconds_per_hour 3600
   
   ask patches [
-    set size_patch 1000; in sq. km    
+    set size_patch 1000; in sq. m    
   ]
   
   ask trucks [
-      set speed_trucks 64.37
-      set dist_to_move_trucks  (speed_trucks / seconds_per_hour * sec_per_tick)
-      set patches_to_move_trucks (dist_to_move_trucks / size_patch)
+      set speed_trucks 64.37; in km/h
+      set dist_to_move_trucks  (speed_trucks * (sec_per_tick / seconds_per_hour)) ; km/h * (1h/3600sec * 60 sec/tick)
+      set patches_to_move_trucks (dist_to_move_trucks / (size_patch / 1000))
   ]
   
   ask horses [
       set speed_horses 21.5
-      set dist_to_move_horses (speed_horses / seconds_per_hour * sec_per_tick)
-      set patches_to_move_horses (dist_to_move_horses / size_patch)
+      set dist_to_move_horses (speed_horses * (sec_per_tick / seconds_per_hour))
+      set patches_to_move_horses (dist_to_move_horses / (size_patch / 1000))
   ]
   
   ask humans [
       set speed_humans 4;
-      set dist_to_move_humans (speed_humans / seconds_per_hour * sec_per_tick)
-      set patches_to_move_humans (dist_to_move_humans / size_patch)
+      set dist_to_move_humans (speed_humans * (sec_per_tick / seconds_per_hour))
+      set patches_to_move_humans (dist_to_move_humans / (size_patch / 1000)); 
   ]
 
 end

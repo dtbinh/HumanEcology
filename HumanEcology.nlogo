@@ -1,5 +1,7 @@
-globals [pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
+globals [
+   pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
    food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks
+   seconds_per_hour
    ]
 ;first line are vars from original code
 ;second line are vars we created to count kilojoules for humans
@@ -9,11 +11,11 @@ breed [humans human]
 breed [horses horse]
 breed [trucks truck]
 
-humans-own [trail_ahead behavior cityx boundary? has_food? foodx foody fidelity recruit]
-horses-own [has_food?]
-trucks-own [has_food?]
+humans-own [trail_ahead behavior cityx boundary? has_food? speed_humans dist_to_move_humans patches_to_move_humans foodx foody fidelity recruit]
+horses-own [has_food? speed_horses dist_to_move_horses patches_to_move_horses]
+trucks-own [has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks]
 
-patches-own [patchsize sfood? mfood? lfood? ofood? pheromone?]
+patches-own [size_patch sfood? mfood? lfood? ofood? pheromone?]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,6 +26,7 @@ to setup_world
 
 __clear-all-and-reset-ticks       
   setup_breeds
+  setup_vars
   ask patches [
   set pcolor 62
   ]  
@@ -103,14 +106,40 @@ to setup_breeds
     ;set behavior 0 ;sets the trucks to their initial behavior condition
     set size 1
   ]
-  
-  ;setting vars for calculation
+end
+
+to setup_vars ;;executed by setup
+  ;;for calculating kjoules for human movement
   set cal_per_min_kg 240 ;in units of Cal * 1/(sec*kg)
   set kg_per_individual 62 ;average human body mass
   set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
   set sec_per_tick 0.54; based on program measurements
-end
+  
+  set seconds_per_hour 3600
+  
+  ask patches [
+    set size_patch 1000; in sq. km    
+  ]
+  
+  ask trucks [
+      set speed_trucks 64.37
+      set dist_to_move_trucks  (speed_trucks / seconds_per_hour * sec_per_tick)
+      set patches_to_move_trucks (dist_to_move_trucks / size_patch)
+  ]
+  
+  ask horses [
+      set speed_horses 21.5
+      set dist_to_move_horses (speed_horses / seconds_per_hour * sec_per_tick)
+      set patches_to_move_horses (dist_to_move_horses / size_patch)
+  ]
+  
+  ask humans [
+      set speed_humans 4;
+      set dist_to_move_humans (speed_humans / seconds_per_hour * sec_per_tick)
+      set patches_to_move_humans (dist_to_move_humans / size_patch)
+  ]
 
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

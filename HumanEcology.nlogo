@@ -1,13 +1,19 @@
-globals [ pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
-   food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks]
+globals [pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
+   food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks
+   ]
 ;first line are vars from original code
-;second line are vars we created
+;second line are vars we created to count kilojoules for humans
+;third line are vars added as part of the new breeds
 
 breed [humans human]
+breed [horses horse]
+breed [trucks truck]
 
 humans-own [trail_ahead behavior cityx boundary? has_food? foodx foody fidelity recruit]
+horses-own [has_food?]
+trucks-own [has_food?]
 
-patches-own [sfood? mfood? lfood? ofood? pheromone? ]
+patches-own [patchsize sfood? mfood? lfood? ofood? pheromone?]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -17,7 +23,7 @@ patches-own [sfood? mfood? lfood? ofood? pheromone? ]
 to setup_world
 
 __clear-all-and-reset-ticks       
-  setup_humans
+  setup_breeds
   ask patches [
   set pcolor 62
   ]  
@@ -43,7 +49,7 @@ to setup_save  ;function re-generates a perviously saved pile configuration
   ask humans [  ;resets all humans by removing existing humans
     die
   ]
-  setup_humans  ;re-generates human city
+  setup_breeds  ;re-generates human city
   clear-all-plots  ;resets the graph
   reset-ticks  ;resets the time step
 
@@ -54,11 +60,11 @@ end
 ;;creates locations for food piles;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup_humans
+to setup_breeds
   
-  set-default-shape humans "dot" ;human shape
+  set-default-shape humans "person" ;human shape
   ask patch 0 0 [
-    sprout-humans city_size        
+    sprout-humans pop_humans        
   ]  
 
   ask humans [
@@ -67,6 +73,34 @@ to setup_humans
     set xcor ((xcor - 7) + random 14)
     set heading random 360 ;human heading
     set behavior 0 ;sets the humans to their initial behavior condition
+    set size 1
+  ]
+  
+  set-default-shape horses "cow" ;horse shape
+  ask patch 0 0 [
+    sprout-horses pop_horses        
+  ]  
+
+  ask horses [
+    set color brown ;horse color
+    set ycor (-7 + random 14) ;horse location
+    set xcor ((xcor - 7) + random 14)
+    set heading random 360 ;horse heading
+    ;set behavior 0 ;sets the horses to their initial behavior condition
+    set size 1
+  ]
+  
+   set-default-shape trucks "car" ;truck shape
+  ask patch 0 0 [
+   sprout-trucks pop_trucks        
+  ]  
+
+  ask trucks [
+    set color grey ;truck color
+    set ycor (-7 + random 14) ;truck location
+    set xcor ((xcor - 7) + random 14)
+    set heading random 360 ;truck heading
+    ;set behavior 0 ;sets the trucks to their initial behavior condition
     set size 1
   ]
   
@@ -150,7 +184,7 @@ to go_density_recruit ;;function executed by the "run" button
     ]
   ]
   set time_ticks (time_ticks + 1)
-  set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * city_size * time_ticks)
+  set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * pop_humans * time_ticks)
 
   tick ;next time step
   
@@ -538,10 +572,10 @@ to save_pile_config
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-497
-23
-1309
-456
+631
+90
+1443
+523
 200
 100
 2.0
@@ -565,10 +599,10 @@ ticks
 30.0
 
 BUTTON
-102
-239
-277
-274
+154
+66
+227
+123
 New Setup
 setup_world\nif ticks > 4 [\nfile-delete \"netlogo food log.txt\"\n]\n
 NIL
@@ -582,25 +616,25 @@ NIL
 1
 
 SLIDER
-194
-141
-366
-174
-City_size
-City_size
+35
+215
+208
+248
+pop_humans
+pop_humans
 1
 1000
-1
+102
 1
 1
 humans
 HORIZONTAL
 
 BUTTON
-289
-239
-466
-275
+31
+423
+208
+459
 Run
 go_density_recruit\n;do-plotting-right\n;do-plotting-left\n;test
 T
@@ -614,10 +648,10 @@ NIL
 1
 
 SLIDER
-100
-377
-276
-410
+248
+383
+424
+416
 Evaporation_rate
 Evaporation_rate
 .0001
@@ -629,10 +663,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-503
-406
-581
-451
+632
+45
+710
+90
 food collected
 food_total
 0
@@ -640,10 +674,10 @@ food_total
 11
 
 SLIDER
-290
-333
-466
-366
+434
+339
+610
+372
 Initial_expansion
 Initial_expansion
 0.9
@@ -655,10 +689,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-100
-332
-276
-365
+248
+338
+424
+371
 Lay_a_trail
 Lay_a_trail
 -9
@@ -680,10 +714,10 @@ Setup
 1
 
 BUTTON
-102
-189
-276
-222
+37
+297
+211
+330
 Save Layout
 save_pile_config
 NIL
@@ -697,10 +731,10 @@ NIL
 1
 
 BUTTON
-289
-189
-466
-222
+35
+340
+212
+373
 Load Layout
 setup_save
 NIL
@@ -714,10 +748,10 @@ NIL
 1
 
 SWITCH
-290
-418
-380
-451
+434
+424
+524
+457
 plot?
 plot?
 0
@@ -725,10 +759,10 @@ plot?
 -1000
 
 SLIDER
-100
-418
-275
-451
+248
+424
+423
+457
 Abandon_trail
 Abandon_trail
 0
@@ -740,10 +774,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-289
-377
-482
-410
+433
+383
+626
+416
 Turn_while_searching
 Turn_while_searching
 0
@@ -755,10 +789,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-101
-293
-277
-326
+249
+299
+425
+332
 Density_Recruit
 Density_Recruit
 -100
@@ -770,10 +804,10 @@ Density_Recruit
 HORIZONTAL
 
 SLIDER
-291
-293
-466
-326
+435
+299
+610
+332
 Site_fidelity
 Site_fidelity
 -100
@@ -785,10 +819,10 @@ Site_fidelity
 HORIZONTAL
 
 BUTTON
-322
-79
-385
-112
+344
+66
+409
+123
 Hole
 go_density_recruit\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
 T
@@ -802,10 +836,10 @@ NIL
 1
 
 BUTTON
-141
-76
-289
-109
+246
+66
+325
+123
 Remove trails
 ask patches [\n set pheromone? 0\n ]
 NIL
@@ -819,10 +853,10 @@ NIL
 1
 
 MONITOR
-580
-406
-680
-451
+709
+45
+809
+90
 total movement
 movement_total
 17
@@ -830,15 +864,45 @@ movement_total
 11
 
 MONITOR
-679
-406
-844
-451
+808
+45
+973
+90
 total kilojoules
 kilojoules_total
 17
 1
 11
+
+SLIDER
+250
+213
+422
+246
+pop_horses
+pop_horses
+0
+1000
+51
+1
+1
+horses
+HORIZONTAL
+
+SLIDER
+436
+214
+608
+247
+pop_trucks
+pop_trucks
+0
+1000
+51
+1
+1
+trucks
+HORIZONTAL
 
 @#$#@#$#@
 ##Problem Definition

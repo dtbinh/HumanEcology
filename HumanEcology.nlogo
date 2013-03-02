@@ -15,7 +15,7 @@ humans-own [trail_ahead behavior cityx boundary? has_food? speed_humans dist_to_
 horses-own [has_food? speed_horses dist_to_move_horses patches_to_move_horses]
 trucks-own [has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks]
 
-patches-own [size_patch sfood? mfood? lfood? ofood? pheromone?]
+patches-own [size_patch lfood? pheromone?]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,26 +118,30 @@ to setup_vars ;;executed by setup
   set seconds_per_hour 3600
   
   ask patches [
-    set size_patch 1000; in sq. m    
+    set size_patch 1000; in meters per side. Currently, this is a sq. km. 
   ]
   
   ask trucks [
-      set speed_trucks 64.37; in km/h
+      set speed_trucks 64.37; in km/h, originally 40 mph
       set dist_to_move_trucks  (speed_trucks * (sec_per_tick / seconds_per_hour)) ; km/h * (1h/3600sec * 60 sec/tick)
       set patches_to_move_trucks (dist_to_move_trucks / (size_patch / 1000))
   ]
   
   ask horses [
-      set speed_horses 21.5
+      set speed_horses 21.5; in km/h, from Sean's data for a canter speed
       set dist_to_move_horses (speed_horses * (sec_per_tick / seconds_per_hour))
       set patches_to_move_horses (dist_to_move_horses / (size_patch / 1000))
   ]
   
   ask humans [
-      set speed_humans 4;
+      set speed_humans 4; 
       set dist_to_move_humans (speed_humans * (sec_per_tick / seconds_per_hour))
       set patches_to_move_humans (dist_to_move_humans / (size_patch / 1000)); 
   ]
+  
+  ;; NOTE:
+  ;; dist to move and patches to move are currently the same because the patch size is a kilometer
+  ;; this will change when/if the size is changed
 
 end
 
@@ -214,6 +218,7 @@ to go_density_recruit ;;function executed by the "run" button
   ]
   set time_ticks (time_ticks + 1)
   set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * pop_humans * time_ticks)
+  ;;This NEEDS to change when some form of population change is implemented.
 
   tick ;next time step
   
@@ -308,9 +313,6 @@ to random_walk
   set color black
   let st_dev 0
   
-  if pxcor = 0 
-  [ set st_dev turn_while_searching
-  ]  
   ;behavior executed during behavior 1
   if ticks mod 4 = 0 [
     rt random-normal 0 (st_dev * 180 / pi)
@@ -333,16 +335,11 @@ to evaporate_trail
 
     let evapo 0
     
-    if pxcor = 0  ;defines trail evaporation consthuman based on GA and user input parameters
-     
-    
-    [ set evapo Evaporation_rate
-    ]
-
+   set evapo Evaporation_rate
     
     set pheromone? (pheromone? * (1 - evapo))  ;pheromone evaporation function
     if pheromone? < .001 [set pheromone? 0]   ;if pheromone becomes almost undetectable, sets value to 0
-    if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;pheromone is only visually represented on pixels without food
+    if pcolor != 62 [   ;pheromone is only visually represented on pixels without food
       if pheromone? >= 6 [set pcolor 99]  
       if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]   ;color gets darker as pheromone gets weaker
       if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
@@ -422,18 +419,9 @@ to check_food
 
   
   ask patch-here [ ;collects food on a patch
-    if pcolor = 62 or pcolor = yellow or pcolor = 7 or pcolor = 123[
+    if pcolor = 62[
       if count turtles-here >= 1  [
         set food? 1
-        
-        ;decrements food counters and updates real-time graphs for each food source
-        
-        if pcolor = 62 [ ;dense food
-          if pxcor = 0 [
-            set lfood_counter1 (lfood_counter1 - 1)
-          ]
-
-        ]
       ]
     ]
   ]
@@ -448,7 +436,7 @@ to check_food
         if (pxcor + x) > (- world-width / 2 + 1) and (pxcor + x) < (world-width / 2 - 1) [
           if (pycor + y) > (- world-height / 2 + 1) and (pycor + y) < (world-height / 2 - 1) [
             ask patch-at x y [
-              if pcolor = 62 or pcolor = yellow or pcolor = 7 or pcolor = 123[
+              if pcolor = 62 [
                 set seed_count (seed_count + 1) ;number of uncollected food nearby
               ]
             ]
@@ -516,11 +504,6 @@ to scan_trail ;function to follow pheromone trails
   let nx cityx
   let tdrop 0
   
-  if pxcor = 0 
-
-  [ set tdrop abandon_trail
-  ]
-  
   set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
   ask neighbors [
     if distancexy nx 0 > curr_distance[
@@ -567,7 +550,7 @@ to color_trail
     if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the city
       ;function to lay down pheromone during behvaior 3
       set pheromone? (pheromone? + 1)  ;increments pheromone by 1 every tick
-      if pcolor != 62 and pcolor != yellow and pcolor != 123 and pcolor != 7 [   ;only draws pheromone on pixels without food
+      if pcolor != 62 [   ;only draws pheromone on pixels without food
         if pheromone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheromone strength
         if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]
         if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
@@ -592,10 +575,7 @@ to save_pile_config
   
   ask patches [
     set lfood? 0 ;resets all different pile configurations to 0  
-    if pcolor = 7 [set sfood? 1]  ;defines existing food locations and stores them in variables
-    if pcolor = yellow [set mfood? 1]
     if pcolor = 62 [set lfood? 1]
-    if pcolor = 123  [set ofood? 1]
   ]
   
 end
@@ -685,7 +665,7 @@ Evaporation_rate
 Evaporation_rate
 .0001
 .1
-0.0998
+1.0E-4
 .0001
 1
 NIL
@@ -811,7 +791,7 @@ Turn_while_searching
 Turn_while_searching
 0
 1
-1
+0.5
 .01
 1
 NIL
@@ -912,7 +892,7 @@ pop_horses
 pop_horses
 0
 1000
-51
+0
 1
 1
 horses
@@ -927,7 +907,7 @@ pop_trucks
 pop_trucks
 0
 1000
-51
+0
 1
 1
 trucks

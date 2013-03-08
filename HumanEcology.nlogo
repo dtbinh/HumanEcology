@@ -1,11 +1,11 @@
 globals [
    pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
    food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks
-   seconds_per_hour
+   seconds_per_hour max_food_in_a_patch ticks_to_wait_after_harvesting
    ]
 ;first line are vars from original code
 ;second line are vars we created to count kilojoules for humans
-;third line are vars added as part of the new breeds, not includingbreed-owned
+;third line are vars added as part of the most recent edits
 
 breed [humans human]
 breed [horses horse]
@@ -15,7 +15,7 @@ humans-own [trail_ahead behavior cityx boundary? has_food? speed_humans dist_to_
 horses-own [has_food? speed_horses dist_to_move_horses patches_to_move_horses]
 trucks-own [has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks]
 
-patches-own [size_patch lfood? pheromone?]
+patches-own [size_patch lfood? pheromone? food_in_patch ticks_since_harvesting]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -117,10 +117,12 @@ to setup_vars ;;executed by setup
   
   set seconds_per_hour 3600
   
+  
   ask patches [
     set size_patch 1000; in meters per side. Currently, this is a sq. km. 
+    set max_food_in_a_patch (size_patch * size_patch)
   ]
-  
+    
   ask trucks [
       set speed_trucks 64.37; in km/h, originally 40 mph
       set dist_to_move_trucks  (speed_trucks * (sec_per_tick / seconds_per_hour)) ; km/h * (1h/3600sec * 60 sec/tick)
@@ -216,9 +218,13 @@ to go_density_recruit ;;function executed by the "run" button
       find_food
     ]
   ]
+  
+  regrow_patches
+  
   set time_ticks (time_ticks + 1)
   set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * pop_humans * time_ticks)
   ;;This NEEDS to change when some form of population change is implemented.
+  ;;Does it? It would function as well if done multiple times per tick... right?
 
   tick ;next time step
   
@@ -422,6 +428,7 @@ to check_food
     if pcolor = 62[
       if count turtles-here >= 1  [
         set food? 1
+        set ticks_since_harvesting 0
       ]
     ]
   ]
@@ -576,6 +583,19 @@ to save_pile_config
   ask patches [
     set lfood? 0 ;resets all different pile configurations to 0  
     if pcolor = 62 [set lfood? 1]
+  ]
+  
+end
+
+
+to regrow_patches
+  ask patches [
+    if ticks_since_harvesting >= ticks_to_wait_after_harvesting [
+      if food_in_patch < max_food_in_a_patch [
+        set food_in_patch (food_in_patch + 1)
+      ]
+    ]
+    set ticks_since_harvesting (ticks_since_harvesting + 1)
   ]
   
 end

@@ -12,8 +12,8 @@ breed [horses horse]
 breed [trucks truck]
 
 humans-own [trail_ahead behavior cityx boundary? has_food? speed_humans dist_to_move_humans patches_to_move_humans foodx foody fidelity recruit]
-horses-own [has_food? speed_horses dist_to_move_horses patches_to_move_horses]
-trucks-own [has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks]
+horses-own [trail_ahead behavior cityx boundary? has_food? speed_horses dist_to_move_horses patches_to_move_horses foodx foody fidelity recruit]
+trucks-own [trail_ahead behavior cityx boundary? has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks foodx foody fidelity recruit]
 
 patches-own [size_patch lfood? pheromone? food_in_patch ticks_since_harvesting]
 
@@ -219,6 +219,120 @@ to go_density_recruit ;;function executed by the "run" button
     ]
   ]
   
+  
+  
+    ask horses [ ;splits the humans behavior into halves based on location.
+    ;humans on the left will bring food to the left city and humans on the right will bring food to the right city.
+      if  cityx != 0
+ [
+    set cityx 0
+ ]
+    
+    
+    
+    
+    if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
+      rt 180 
+     fd 1
+     set movement_total (movement_total + 1) 
+   ]
+    
+    ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
+    ;;Different stimuli such as the presence of trails or food will cause humans to change their behaviors 
+    ;;on an individual bases. 
+    
+    
+    stop_search? ;function determining random chance of giving up (ctrl+F "stop_search?" for details)
+    
+    
+    if behavior = 0 [ ;function for initial expansion of the humans (ctrl+F "move_away" for details)
+      move_away
+    ]
+    
+    if behavior = 1 [  ;function for random walking and food searching behavior (crtl+F "random_walk" or "check_food" for details)
+      random_walk_horses
+      check_food
+    ]
+    
+    if behavior = 2 [  ;function for trail following behavior (ctrl+F "scan_trail" for details)
+      scan_trail_horses
+    ]   
+    
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;returning to the city;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    if behavior = 3 [  ;function for when the humans choose to return home without marking a trail (ctrl+F "return_home" for details)
+      return_home_horses
+    ]
+    
+    if behavior = 4 [ ;function when humans choose to return home while marking a trail or incrementing existing trail (ctrl+F "color_trail" for details)
+      color_trail
+      return_home_horses  
+      
+    ]
+    if behavior = 6 [ ;function where humans use site fidelity to return to the last known food location (ctrl+F "find_food" for details)
+      find_food_horses
+    ]
+  ]
+    
+      ask trucks [ ;splits the humans behavior into halves based on location.
+    ;humans on the left will bring food to the left city and humans on the right will bring food to the right city.
+      if  cityx != 0
+ [
+    set cityx 0
+ ]
+    
+    
+    
+    
+    if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
+      rt 180 
+     fd 1
+     set movement_total (movement_total + 1) 
+   ]
+    
+    ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
+    ;;Different stimuli such as the presence of trails or food will cause humans to change their behaviors 
+    ;;on an individual bases. 
+    
+    
+    stop_search? ;function determining random chance of giving up (ctrl+F "stop_search?" for details)
+    
+    
+    if behavior = 0 [ ;function for initial expansion of the humans (ctrl+F "move_away" for details)
+      move_away
+    ]
+    
+    if behavior = 1 [  ;function for random walking and food searching behavior (crtl+F "random_walk" or "check_food" for details)
+      random_walk_trucks
+      check_food
+    ]
+    
+    if behavior = 2 [  ;function for trail following behavior (ctrl+F "scan_trail" for details)
+      scan_trail_trucks
+    ]   
+    
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;returning to the city;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    if behavior = 3 [  ;function for when the humans choose to return home without marking a trail (ctrl+F "return_home" for details)
+      return_home_trucks
+    ]
+    
+    if behavior = 4 [ ;function when humans choose to return home while marking a trail or incrementing existing trail (ctrl+F "color_trail" for details)
+      color_trail
+      return_home_trucks  
+      
+    ]
+    if behavior = 6 [ ;function where humans use site fidelity to return to the last known food location (ctrl+F "find_food" for details)
+      find_food_trucks
+    ]
+  ]
+  
   regrow_patches
   
   set time_ticks (time_ticks + 1)
@@ -235,8 +349,6 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;human behavioral fuctions;;;;;;;;;;;;;;;;human behavioral fuctions;;;;;;;;;;;;;;;;human behavioral fuctions;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 to return_home  ;function for human behavior when returning to the city 
   
@@ -314,6 +426,158 @@ to return_home  ;function for human behavior when returning to the city
   
 end
 
+to return_home_horses  ;function for human behavior when returning to the city 
+  
+  let max_pher 0
+  let x -1
+  let y -1  
+  let trail_follow? 0  
+  let x1 cityx
+  
+  ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
+    facexy cityx 0
+    set curr_distance (distancexy cityx 0) ; registers current distance from city
+    rt random-normal 0 20  ;random wiggle movement
+    ask patch-ahead 1 [
+      set new_distance (distancexy x1 0)  ;registers future position from city
+    ]
+    if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
+      face patch-ahead 1
+      forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      setxy  pxcor pycor ;centers on the patch after moving
+    ]
+  ]
+  
+  [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
+      set food_total (food_total + 1)
+    
+      ] 
+  set has_food? 0
+  
+  while [x < 2] [
+    set y -1
+    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
+      if x != cityx or y != 0 [ ;does not look for pheromone on the city
+        ask patch-at x y [
+          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
+            set max_pher pheromone?
+          ]
+        ]
+      ]
+      set y (y + 1)
+    ] 
+    set x (x + 1) 
+  ]
+  ifelse recruit = 1 [
+    ifelse max_pher > 0 [
+      set xcor cityx
+      set ycor 0
+      while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
+        set heading (random 360)
+        scan_ahead_horses   ;scans 1 patch at every random heading
+        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
+          face patch-ahead 1
+          fd distance patch-ahead 1 ;moves onto 1 patch ahead
+          set movement_total ((movement_total + 1) )
+          setxy pxcor pycor ;centers on current patch
+          set behavior 2
+        ]
+      ]
+    ]
+    [ set heading (random 360) ;if no pheromone is present, human enters search mode
+      set behavior 1
+    ]
+  ]
+  [
+    ifelse fidelity = 1 [      
+      facexy foodx foody
+      set behavior 6
+    ]
+    [ set heading (random 360)
+      set behavior 1
+    ]
+  ]
+  
+  ]
+  
+end
+
+to return_home_trucks  ;function for human behavior when returning to the city 
+  
+  let max_pher 0
+  let x -1
+  let y -1  
+  let trail_follow? 0  
+  let x1 cityx
+  
+  ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
+    facexy cityx 0
+    set curr_distance (distancexy cityx 0) ; registers current distance from city
+    rt random-normal 0 20  ;random wiggle movement
+    ask patch-ahead 1 [
+      set new_distance (distancexy x1 0)  ;registers future position from city
+    ]
+    if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
+      face patch-ahead 1
+      forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      setxy  pxcor pycor ;centers on the patch after moving
+    ]
+  ]
+  
+  [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
+      set food_total (food_total + 1)
+    
+      ] 
+  set has_food? 0
+  
+  while [x < 2] [
+    set y -1
+    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
+      if x != cityx or y != 0 [ ;does not look for pheromone on the city
+        ask patch-at x y [
+          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
+            set max_pher pheromone?
+          ]
+        ]
+      ]
+      set y (y + 1)
+    ] 
+    set x (x + 1) 
+  ]
+  ifelse recruit = 1 [
+    ifelse max_pher > 0 [
+      set xcor cityx
+      set ycor 0
+      while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
+        set heading (random 360)
+        scan_ahead_trucks   ;scans 1 patch at every random heading
+        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
+          face patch-ahead 1
+          fd distance patch-ahead 1 ;moves onto 1 patch ahead
+          set movement_total ((movement_total + 1) )
+          setxy pxcor pycor ;centers on current patch
+          set behavior 2
+        ]
+      ]
+    ]
+    [ set heading (random 360) ;if no pheromone is present, human enters search mode
+      set behavior 1
+    ]
+  ]
+  [
+    ifelse fidelity = 1 [      
+      facexy foodx foody
+      set behavior 6
+    ]
+    [ set heading (random 360)
+      set behavior 1
+    ]
+  ]
+  
+  ]
+  
+end
+
 
 to random_walk
   set color black
@@ -330,7 +594,35 @@ to random_walk
   
 end
 
+to random_walk_horses
+  set color brown
+  let st_dev 0
+  
+  ;behavior executed during behavior 1
+  if ticks mod 4 = 0 [
+    rt random-normal 0 (st_dev * 180 / pi)
+  ]
+  fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
+  set movement_total (movement_total + 1) 
+  ;possibly set it to +.25? Unfamiliar with how decimals + move works
+  ;;fixme
+  
+end
 
+to random_walk_trucks
+  set color grey
+  let st_dev 0
+  
+  ;behavior executed during behavior 1
+  if ticks mod 4 = 0 [
+    rt random-normal 0 (st_dev * 180 / pi)
+  ]
+  fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
+  set movement_total (movement_total + 1) 
+  ;possibly set it to +.25? Unfamiliar with how decimals + move works
+  ;;fixme
+  
+end
 
 
 
@@ -361,6 +653,42 @@ to evaporate_trail
 end
 
 to find_food
+  
+  set color blue ;humans turn blue while executing site fidelity
+  
+  if (abs xcor) < ( abs foodx + 2) and (abs xcor) > ( abs foodx - 2) [ ;if the human is within 2 pixels of last known food location, exits site fidelity behavior
+    if (abs ycor) < ( abs foody + 2) and (abs ycor) > ( abs foody - 2) [
+      set behavior 1
+    ]
+  ]
+  facexy foodx foody ;moves towards last known food location
+  rt (-20 + random 40)
+  fd 1
+  set movement_total (movement_total + 1) 
+  setxy xcor ycor
+  
+  
+end
+
+to find_food_horses
+  
+  set color blue ;humans turn blue while executing site fidelity
+  
+  if (abs xcor) < ( abs foodx + 2) and (abs xcor) > ( abs foodx - 2) [ ;if the human is within 2 pixels of last known food location, exits site fidelity behavior
+    if (abs ycor) < ( abs foody + 2) and (abs ycor) > ( abs foody - 2) [
+      set behavior 1
+    ]
+  ]
+  facexy foodx foody ;moves towards last known food location
+  rt (-20 + random 40)
+  fd 1
+  set movement_total (movement_total + 1) 
+  setxy xcor ycor
+  
+  
+end
+
+to find_food_trucks
   
   set color blue ;humans turn blue while executing site fidelity
   
@@ -501,7 +829,53 @@ to scan_ahead ;humans look for pheromone directly infront of themselves
     ]
   ]
   
-end      
+end
+
+to scan_ahead_horses ;humans look for pheromone directly infront of themselves
+  
+  let nx cityx
+  
+  if can-move? 1 [ ;checks for the world boundaries
+    ask patch-ahead 1 [  
+      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
+        set pher_ahead pheromone?
+        set dist distancexy nx 0
+        ask horses [
+          set trail_ahead 1
+        ]
+      ]
+      [ set pher_ahead 0
+        ask horses [
+          set trail_ahead 0
+        ]
+      ]
+    ]
+  ]
+  
+end   
+
+to scan_ahead_trucks ;humans look for pheromone directly infront of themselves
+  
+  let nx cityx
+  
+  if can-move? 1 [ ;checks for the world boundaries
+    ask patch-ahead 1 [  
+      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
+        set pher_ahead pheromone?
+        set dist distancexy nx 0
+        ask trucks [
+          set trail_ahead 1
+        ]
+      ]
+      [ set pher_ahead 0
+        ask trucks [
+          set trail_ahead 0
+        ]
+      ]
+    ]
+  ]
+  
+end    
 
 to scan_trail ;function to follow pheromone trails
   
@@ -550,6 +924,99 @@ to scan_trail ;function to follow pheromone trails
   
 end  
 
+to scan_trail_horses ;function to follow pheromone trails
+  
+  let max_pher 0
+  let x2 xcor
+  let y2 ycor
+  let nx cityx
+  let tdrop 0
+  
+  set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
+  ask neighbors [
+    if distancexy nx 0 > curr_distance[
+      if pheromone? > 0 [
+        if pheromone? > max_pher [
+          set max_pher pheromone?
+        ]                
+      ]
+    ]
+  ]
+  ifelse max_pher > 0 [  
+    while [xcor = x2 and ycor = y2] [
+      set heading (random 360)
+      set color white ;turn white while following a trail for visual effect
+      scan_ahead_horses 
+      if pher_ahead > random max_pher [
+        if dist >= distancexy cityx 0 [
+          face patch-ahead 1
+          fd distance patch-ahead 1
+          set movement_total (movement_total + 1) 
+          setxy pxcor pycor
+        ]          
+      ]
+    ]
+    
+    if (random 10000) / 10000 < tdrop [ ;small chance to abandon a trail and begin searching
+      set behavior 1
+      set color brown
+      set heading random 360
+    ]
+  ]
+  [
+    set behavior 1 ;when the trail is gone, humans revert to search behavior
+    set color brown
+    set heading random 360
+  ]
+  
+end  
+
+to scan_trail_trucks ;function to follow pheromone trails
+  
+  let max_pher 0
+  let x2 xcor
+  let y2 ycor
+  let nx cityx
+  let tdrop 0
+  
+  set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
+  ask neighbors [
+    if distancexy nx 0 > curr_distance[
+      if pheromone? > 0 [
+        if pheromone? > max_pher [
+          set max_pher pheromone?
+        ]                
+      ]
+    ]
+  ]
+  ifelse max_pher > 0 [  
+    while [xcor = x2 and ycor = y2] [
+      set heading (random 360)
+      set color white ;turn white while following a trail for visual effect
+      scan_ahead_trucks
+      if pher_ahead > random max_pher [
+        if dist >= distancexy cityx 0 [
+          face patch-ahead 1
+          fd distance patch-ahead 1
+          set movement_total (movement_total + 1) 
+          setxy pxcor pycor
+        ]          
+      ]
+    ]
+    
+    if (random 10000) / 10000 < tdrop [ ;small chance to abandon a trail and begin searching
+      set behavior 1
+      set color grey
+      set heading random 360
+    ]
+  ]
+  [
+    set behavior 1 ;when the trail is gone, humans revert to search behavior
+    set color grey
+    set heading random 360
+  ]
+  
+end  
 
 to color_trail
   
@@ -592,7 +1059,9 @@ to regrow_patches
   ask patches [
     if ticks_since_harvesting >= ticks_to_wait_after_harvesting [
       if food_in_patch < max_food_in_a_patch [
-        set food_in_patch (food_in_patch + 1)
+        if food_in_patch < 0 [
+          set food_in_patch (food_in_patch + 1)
+        ]
       ]
     ]
     set ticks_since_harvesting (ticks_since_harvesting + 1)
@@ -653,7 +1122,7 @@ pop_humans
 pop_humans
 1
 1000
-102
+210
 1
 1
 humans
@@ -912,7 +1381,7 @@ pop_horses
 pop_horses
 0
 1000
-0
+236
 1
 1
 horses
@@ -927,7 +1396,7 @@ pop_trucks
 pop_trucks
 0
 1000
-0
+312
 1
 1
 trucks

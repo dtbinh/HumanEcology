@@ -45,10 +45,10 @@ to setup_save  ;function re-generates a perviously saved pile configuration
   
   ask patches [  
     set pheromone? 0  ;resets all pheromone values
-    set pcolor green  ;refreshes the world in base green color  
+    set pcolor grey  ;refreshes the world in base grey color  
 
     if lfood? = 1 [
-      set pcolor 62  ;colors food green
+      set pcolor 62  ;colors food grey
     ]
   ]
   ask humans [  ;resets all humans by removing existing humans
@@ -101,7 +101,7 @@ to setup_breeds
   ]  
 
   ask trucks [
-    set color grey ;truck color
+    set color red ;truck color
     set ycor (-7 + random 14) ;truck location
     set xcor ((xcor - 7) + random 14)
     set heading random 360 ;truck heading
@@ -188,7 +188,7 @@ to go_density_recruit ;;function executed by the "run" button
     
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
-     fd 1
+     fd patches_to_move_humans
      set movement_humans (movement_humans + 1) 
    ]
     
@@ -246,8 +246,8 @@ to go_density_recruit ;;function executed by the "run" button
     
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
-     fd 1
-     set movement_total (movement_total + 1) 
+     fd patches_to_move_horses
+     set movement_horses (movement_horses + 1) 
    ]
     
     ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
@@ -302,8 +302,8 @@ to go_density_recruit ;;function executed by the "run" button
     
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
-     fd 1
-     set movement_total (movement_total + 1) 
+     fd patches_to_move_trucks
+     set movement_trucks (movement_trucks + 1) 
    ]
     
     ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
@@ -383,7 +383,7 @@ to return_home  ;function for human behavior when returning to the city
     ]
     if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
-      forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      forward distance patch-ahead .51 ;moves to the patch 1 unit ahead
       set movement_humans (movement_humans + 1)
       setxy  pxcor pycor ;centers on the patch after moving
     ]
@@ -418,7 +418,7 @@ to return_home  ;function for human behavior when returning to the city
         scan_ahead   ;scans 1 patch at every random heading
         if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
           face patch-ahead 1
-          fd distance patch-ahead 1 ;moves onto 1 patch ahead
+          fd distance patch-ahead .51 ;moves onto 1 patch ahead
           set movement_humans ((movement_humans + 1) )
           setxy pxcor pycor ;centers on current patch
           set behavior 2
@@ -460,7 +460,7 @@ to return_home_horses  ;function for human behavior when returning to the city
     ]
     if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
-      forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      forward distance patch-ahead .8 ;moves to the patch 1 unit ahead
       setxy  pxcor pycor ;centers on the patch after moving
     ]
   ]
@@ -494,8 +494,8 @@ to return_home_horses  ;function for human behavior when returning to the city
         scan_ahead_horses   ;scans 1 patch at every random heading
         if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
           face patch-ahead 1
-          fd distance patch-ahead 1 ;moves onto 1 patch ahead
-          set movement_total ((movement_total + 1) )
+          fd distance patch-ahead .8 ;moves onto 1 patch ahead
+          set movement_horses (movement_horses + 1)
           setxy pxcor pycor ;centers on current patch
           set behavior 2
         ]
@@ -536,7 +536,7 @@ to return_home_trucks  ;function for human behavior when returning to the city
     ]
     if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
-      forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      forward distance patch-ahead patches_to_move_trucks ;moves to the patch 1 unit ahead
       setxy  pxcor pycor ;centers on the patch after moving
     ]
   ]
@@ -570,8 +570,8 @@ to return_home_trucks  ;function for human behavior when returning to the city
         scan_ahead_trucks   ;scans 1 patch at every random heading
         if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
           face patch-ahead 1
-          fd distance patch-ahead 1 ;moves onto 1 patch ahead
-          set movement_total ((movement_total + 1) )
+          fd distance patch-ahead patches_to_move_trucks ;moves onto 1 patch ahead
+          set movement_trucks (movement_trucks + 1)
           setxy pxcor pycor ;centers on current patch
           set behavior 2
         ]
@@ -619,12 +619,12 @@ to random_walk_horses
     rt random-normal 0 (st_dev * 180 / pi)
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
-  set movement_total (movement_total + 1) 
+  set movement_horses (movement_horses + 1) 
   
 end
 
 to random_walk_trucks
-  set color grey
+  set color red
   let st_dev 0
   
   ;behavior executed during behavior 1
@@ -632,7 +632,7 @@ to random_walk_trucks
     rt random-normal 0 (st_dev * 180 / pi)
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
-  set movement_total (movement_total + 1) 
+  set movement_trucks (movement_trucks + 1) 
   
 end
 
@@ -658,7 +658,7 @@ to evaporate_trail
       if pheromone? >= 1 and pheromone? < 2 [set pcolor 94]
       if pheromone? >= .1  and pheromone? < 1 [set pcolor 93] 
       if pheromone? >= .01 and pheromone? < .1 [set pcolor 92]
-      if pheromone? = 0 and pcolor = 92 [set pcolor green] 
+      if pheromone? = 0 and pcolor = 92 [set pcolor grey] 
     ]
   ]
   
@@ -675,7 +675,7 @@ to find_food
   ]
   facexy foodx foody ;moves towards last known food location
   rt (-20 + random 40)
-  fd 1
+  fd patches_to_move_humans
   set movement_humans (movement_humans + 1) 
   setxy xcor ycor
   
@@ -693,8 +693,8 @@ to find_food_horses
   ]
   facexy foodx foody ;moves towards last known food location
   rt (-20 + random 40)
-  fd 1
-  set movement_total (movement_total + 1) 
+  fd patches_to_move_horses
+  set movement_horses (movement_horses + 1) 
   setxy xcor ycor
   
   
@@ -711,8 +711,8 @@ to find_food_trucks
   ]
   facexy foodx foody ;moves towards last known food location
   rt (-20 + random 40)
-  fd 1
-  set movement_total (movement_total + 1) 
+  fd patches_to_move_trucks
+  set movement_trucks (movement_trucks + 1) 
   setxy xcor ycor
   
   
@@ -776,7 +776,7 @@ to check_food
   if behavior = 1 or behavior = 2 and food? = 1[ ;executes once food has been collected
     set has_food? 1
     set seed_count 0
-    set pcolor green ;removes visual represenation of food from the patch
+    set pcolor grey ;removes visual represenation of food from the patch
     while [x < 2] [ ;uses while loops to scan surrounding eight patches for food
       set y -1
       while [y < 2] [
@@ -963,7 +963,7 @@ to scan_trail_horses ;function to follow pheromone trails
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
-          set movement_total (movement_total + 1) 
+          set movement_horses (movement_horses + 1) 
           setxy pxcor pycor
         ]          
       ]
@@ -1010,7 +1010,7 @@ to scan_trail_trucks ;function to follow pheromone trails
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
-          set movement_total (movement_total + 1) 
+          set movement_trucks (movement_trucks + 1) 
           setxy pxcor pycor
         ]          
       ]
@@ -1018,13 +1018,13 @@ to scan_trail_trucks ;function to follow pheromone trails
     
     if (random 10000) / 10000 < tdrop [ ;small chance to abandon a trail and begin searching
       set behavior 1
-      set color grey
+      set color red
       set heading random 360
     ]
   ]
   [
     set behavior 1 ;when the trail is gone, humans revert to search behavior
-    set color grey
+    set color red
     set heading random 360
   ]
   
@@ -1042,8 +1042,8 @@ to color_trail
         if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
         if pheromone? >= 3 and pheromone? < 4 [set pcolor 96]
         if pheromone? >= 2 and pheromone? < 3 [set pcolor 95]
-        if pheromone? >= 1 and pheromone? < 2  [set pcolor 94]
-        if pheromone? < 1  and pcolor = green [set pcolor 93]   ;will not draw pheromone over food, only green space
+        if pheromone? >= 1 and pheromone? < 2 [set pcolor 94]
+        if pheromone? < 1  and pcolor = grey [set pcolor 93]   ;will not draw pheromone over food, only grey space
                                                                 ; set trail_evaporation  trail_evaporation
       ]
     ]
@@ -1082,13 +1082,13 @@ to regrow_patches
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-631
-90
-1443
-523
+670
+52
+1490
+533
 200
-100
-2.0
+111
+2.02
 1
 10
 1
@@ -1100,8 +1100,8 @@ GRAPHICS-WINDOW
 1
 -200
 200
--100
-100
+-111
+111
 1
 1
 1
@@ -1109,10 +1109,10 @@ ticks
 30.0
 
 BUTTON
-154
-66
-227
-123
+3
+53
+92
+116
 New Setup
 setup_world\nif ticks > 4 [\nfile-delete \"netlogo food log.txt\"\n]\n
 NIL
@@ -1126,25 +1126,25 @@ NIL
 1
 
 SLIDER
-35
-215
-208
-248
+101
+54
+274
+87
 pop_humans
 pop_humans
 0
 1000
-0
+150
 10
 1
 humans
 HORIZONTAL
 
 BUTTON
-31
-423
-208
+282
+300
 459
+390
 Run
 go_density_recruit\n;do-plotting-right\n;do-plotting-left\n;test
 T
@@ -1158,25 +1158,25 @@ NIL
 1
 
 SLIDER
-248
-383
-424
-416
+282
+151
+458
+184
 Evaporation_rate
 Evaporation_rate
 .0001
 .1
-1.0E-4
+0.01
 .0001
 1
 NIL
 HORIZONTAL
 
 MONITOR
-632
-45
-710
-90
+670
+10
+748
+55
 food collected
 food_total
 0
@@ -1184,10 +1184,10 @@ food_total
 11
 
 SLIDER
-434
-339
-610
-372
+465
+102
+640
+135
 Initial_expansion
 Initial_expansion
 0.9
@@ -1199,10 +1199,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-248
-338
-424
-371
+282
+102
+458
+135
 Lay_a_trail
 Lay_a_trail
 -9
@@ -1214,20 +1214,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-262
-30
-412
-52
+343
+10
+405
+39
 Setup
-18
+24
 0.0
 1
 
 BUTTON
-37
-297
-211
-330
+100
+197
+274
+230
 Save Layout
 save_pile_config
 NIL
@@ -1241,10 +1241,10 @@ NIL
 1
 
 BUTTON
-35
-340
-212
-373
+464
+198
+641
+231
 Load Layout
 setup_save
 NIL
@@ -1258,10 +1258,10 @@ NIL
 1
 
 SWITCH
-434
-424
-524
-457
+3
+128
+93
+161
 plot?
 plot?
 0
@@ -1269,10 +1269,10 @@ plot?
 -1000
 
 SLIDER
-248
-424
-423
-457
+283
+197
+458
+230
 Abandon_trail
 Abandon_trail
 0
@@ -1284,10 +1284,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-433
-383
-626
-416
+465
+151
+641
+184
 Turn_while_searching
 Turn_while_searching
 0
@@ -1299,10 +1299,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-249
-299
-425
-332
+281
+54
+457
+87
 Density_Recruit
 Density_Recruit
 -100
@@ -1314,10 +1314,10 @@ Density_Recruit
 HORIZONTAL
 
 SLIDER
-435
-299
-610
-332
+465
+54
+640
+87
 Site_fidelity
 Site_fidelity
 -100
@@ -1329,27 +1329,10 @@ Site_fidelity
 HORIZONTAL
 
 BUTTON
-344
-66
-409
-123
-Hole
-go_density_recruit\nif ticks > 100 [\n ask humans [\n  set behavior 3\n            ]\n]
-T
-1
-T
-OBSERVER
-NIL
-H
-NIL
-NIL
-1
-
-BUTTON
-246
-66
-325
-123
+3
+174
+93
+231
 Remove trails
 ask patches [\n set pheromone? 0\n ]
 NIL
@@ -1357,93 +1340,93 @@ NIL
 T
 OBSERVER
 NIL
-NIL
+T
 NIL
 NIL
 1
 
 MONITOR
-709
-45
-809
-90
+747
+10
+847
+55
 total movement
 movement_total
-17
+2
 1
 11
 
 MONITOR
-808
-45
-973
-90
+846
+10
+1011
+55
 total kilojoules
 kilojoules_total
-17
+0
 1
 11
 
 SLIDER
-250
-213
-422
-246
+102
+102
+274
+135
 pop_horses
 pop_horses
 0
 1000
-50
+150
 10
 1
 horses
 HORIZONTAL
 
 SLIDER
-436
-214
-608
-247
+102
+151
+274
+184
 pop_trucks
 pop_trucks
 0
 1000
-0
+150
 10
 1
 trucks
 HORIZONTAL
 
 MONITOR
-1081
-45
-1193
-90
-Human movement
-movement_humans
-17
+1034
+10
+1182
+55
+Kilojoules used by trucks
+kilojoules_trucks
+0
 1
 11
 
 MONITOR
-1193
-45
-1299
-90
-Horse movement
-movement_horses
-17
+1182
+10
+1333
+55
+Kilojoules used by horses
+kilojoules_horses
+0
 1
 11
 
 MONITOR
-1299
-45
-1403
-90
-Truck movement
-movement_trucks
-17
+1333
+10
+1490
+55
+Kilojoules used by humans
+kilojoules_humans
+0
 1
 11
 

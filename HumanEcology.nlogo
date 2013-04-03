@@ -1,13 +1,14 @@
 globals [
-   pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
-   food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks
-   seconds_per_hour max_food_in_a_patch ticks_to_wait_after_harvesting
-   movement_humans movement_horses movement_trucks kilojoules_humans kilojoules_horses kilojoules_trucks cal_per_hour_horses cal_per_gallon kilometers_per_gallon
+   road_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
+   food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total 
+   gigajoules_total time_ticks seconds_per_hour max_food_in_a_patch ticks_to_wait_after_harvesting
+   movement_humans movement_horses movement_trucks gigajoules_humans gigajoules_horses gigajoules_trucks
+   cal_per_hour_horses cal_per_gallon kilometers_per_gallon size_patch carry_volume_humans carry_volume_horses
+   carry_volume_trucks squad_size_humans squad_size_horses squad_size_trucks greatest_distance
+   food_humans food_horses food_trucks food_joule_ratio_humans food_joule_ratio_horses food_joule_ratio_trucks
    ]
-;first line are vars from original code
-;second line are vars we created to count kilojoules for humans
-;third line are vars added as part of the most recent edits
-;fourth line are from the final day of edits
+;first line are vars kept from original code
+;all other lines are vars we added
 
 breed [humans human]
 breed [horses horse]
@@ -17,7 +18,7 @@ humans-own [trail_ahead behavior cityx boundary? has_food? speed_humans dist_to_
 horses-own [trail_ahead behavior cityx boundary? has_food? speed_horses dist_to_move_horses patches_to_move_horses foodx foody fidelity recruit]
 trucks-own [trail_ahead behavior cityx boundary? has_food? speed_trucks dist_to_move_trucks patches_to_move_trucks foodx foody fidelity recruit]
 
-patches-own [size_patch lfood? pheromone? food_in_patch ticks_since_harvesting]
+patches-own [lfood? trail? ticks_since_harvesting]
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,26 +41,6 @@ __clear-all-and-reset-ticks
                ]
   ]
 end
-
-to setup_save  ;function re-generates a perviously saved pile configuration
-  
-  ask patches [  
-    set pheromone? 0  ;resets all pheromone values
-    set pcolor grey  ;refreshes the world in base grey color  
-
-    if lfood? = 1 [
-      set pcolor 62  ;colors food grey
-    ]
-  ]
-  ask humans [  ;resets all humans by removing existing humans
-    die
-  ]
-  setup_breeds  ;re-generates human city
-  clear-all-plots  ;resets the graph
-  reset-ticks  ;resets the time step
-
-end
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;creates locations for food piles;;
@@ -112,29 +93,36 @@ end
 
 to setup_vars ;;executed by setup
   
+  ;;used for general calculation
+  set size_patch 1000; in meters per side. 
+  set max_food_in_a_patch 76602;expected yield of 1 sq km of land
+  set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
+  set sec_per_tick 60; based on program measurements
+  set seconds_per_hour 3600
+  set greatest_distance 0
+  set food_humans 1
+  set food_horses 1
+  set food_trucks 1
+  
+  
   ;;for calculating kjoules for human movement
   set cal_per_min_kg 0.06 ;in units of Cal * 1/(sec*kg)
   set kg_per_individual 62 ;average human body mass
-  set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
-  set sec_per_tick 60; based on program measurements
+  set carry_volume_humans 2.2 ;in cubic m
+  set squad_size_humans (max_food_in_a_patch / carry_volume_humans)
+  
   
   ;;for calculating kjoules for horse movement
   set cal_per_hour_horses 2500 ;From National Academy's NRH's 2007 study
-  
+  set carry_volume_horses 10 ;in cubic m
+  set squad_size_horses (ceiling(max_food_in_a_patch / carry_volume_horses))
   
   ;;for calculating kjoules for truck movement
   set cal_per_gallon 35000 ;kcal in a gallon of diesel
   set kilometers_per_gallon 6; avg fuel efficiency of a highly effecient loaded semi
-  
-  
-  set seconds_per_hour 3600
-  
-  
-  ask patches [
-    set size_patch 1000; in meters per side. Currently, this is a sq. km. 
-    set max_food_in_a_patch (size_patch * size_patch)
-  ]
-    
+  set carry_volume_trucks 114.8 ;in cubic m
+  set squad_size_trucks (ceiling(max_food_in_a_patch / carry_volume_trucks))
+
   ask trucks [
       set speed_trucks 64.37; in km/h, originally 40 mph
       set dist_to_move_trucks  (speed_trucks * (sec_per_tick / seconds_per_hour)) ; km/h * (1h/3600sec * 60 sec/tick)
@@ -172,7 +160,7 @@ to go_density_recruit ;;function executed by the "run" button
   set GAexpand 0.9836
   
   
-  evaporate_trail   ;;;decrements all trails pheromone value (ctrl+F "evaporate trail" for details)
+  evaporate_trail   ;;;decrements all trails trail value (ctrl+F "evaporate trail" for details)
   
   
   
@@ -346,16 +334,24 @@ to go_density_recruit ;;function executed by the "run" button
     ]
   ]
   
-  regrow_patches
+  ;regrow_patches
   
   set time_ticks (time_ticks + 1)
   
-  set kilojoules_humans (cal_per_min_kg * kg_per_individual * kilojoule_conversion / 60 * sec_per_tick * pop_humans * time_ticks)
-  set kilojoules_horses (cal_per_hour_horses / 60 * kilojoule_conversion * pop_horses * time_ticks)
-  set kilojoules_trucks (cal_per_gallon / kilometers_per_gallon * kilojoule_conversion * movement_trucks)
-  set kilojoules_total (kilojoules_humans + kilojoules_horses + kilojoules_trucks)
+  set gigajoules_humans (cal_per_min_kg * kg_per_individual * kilojoule_conversion / 60 * sec_per_tick * pop_humans * squad_size_humans * time_ticks / 1000 / 1000)
+  set gigajoules_horses (cal_per_hour_horses / 60 * kilojoule_conversion * pop_horses * squad_size_horses * time_ticks / 1000 / 1000)
+  set gigajoules_trucks (cal_per_gallon / kilometers_per_gallon * kilojoule_conversion * squad_size_trucks * movement_trucks / 1000 / 1000)
   
+  set food_joule_ratio_humans (gigajoules_humans / food_humans)
+  set food_joule_ratio_horses ( gigajoules_horses / food_horses)
+  set food_joule_ratio_trucks (gigajoules_trucks / food_trucks)
+  
+  set gigajoules_total (gigajoules_humans + gigajoules_horses + gigajoules_trucks) 
+  set food_total (food_humans + food_horses + food_trucks)
   set movement_total (movement_humans + movement_horses + movement_trucks)
+  
+  
+  
   tick ;next time step
   
 end
@@ -368,7 +364,7 @@ end
 
 to return_home  ;function for human behavior when returning to the city 
   
-  let max_pher 0
+  let max_road 0
   let x -1
   let y -1  
   let trail_follow? 0  
@@ -377,6 +373,12 @@ to return_home  ;function for human behavior when returning to the city
   ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
     facexy cityx 0
     set curr_distance (distancexy cityx 0) ; registers current distance from city
+    
+    if curr_distance > greatest_distance [
+     set greatest_distance curr_distance 
+    ]
+    
+    
     rt random-normal 0 20  ;random wiggle movement
     ask patch-ahead 1 [
       set new_distance (distancexy x1 0)  ;registers future position from city
@@ -390,18 +392,18 @@ to return_home  ;function for human behavior when returning to the city
   ]
   
   [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
-      set food_total (food_total + 1)
+      set food_humans (food_humans + 1)
     
       ] 
   set has_food? 0
   
   while [x < 2] [
     set y -1
-    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
-      if x != cityx or y != 0 [ ;does not look for pheromone on the city
+    while [y < 2] [ ;while loops used to ask all surrounding patches for trail
+      if x != cityx or y != 0 [ ;does not look for trail on the city
         ask patch-at x y [
-          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
-            set max_pher pheromone?
+          if trail? > max_road [ ;sets maximum trail value to highest surrounding trail value
+            set max_road trail?
           ]
         ]
       ]
@@ -410,13 +412,13 @@ to return_home  ;function for human behavior when returning to the city
     set x (x + 1) 
   ]
   ifelse recruit = 1 [
-    ifelse max_pher > 0 [
+    ifelse max_road > 0 [
       set xcor cityx
       set ycor 0
       while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
         set heading (random 360)
         scan_ahead   ;scans 1 patch at every random heading
-        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
+        if road_ahead >= (random-float max_road) [  ;random chance based on the maximum trail to follow current trail trail
           face patch-ahead 1
           fd distance patch-ahead .51 ;moves onto 1 patch ahead
           set movement_humans ((movement_humans + 1) )
@@ -425,7 +427,7 @@ to return_home  ;function for human behavior when returning to the city
         ]
       ]
     ]
-    [ set heading (random 360) ;if no pheromone is present, human enters search mode
+    [ set heading (random 360) ;if no trail is present, human enters search mode
       set behavior 1
     ]
   ]
@@ -445,7 +447,7 @@ end
 
 to return_home_horses  ;function for human behavior when returning to the city 
   
-  let max_pher 0
+  let max_road 0
   let x -1
   let y -1  
   let trail_follow? 0  
@@ -454,10 +456,16 @@ to return_home_horses  ;function for human behavior when returning to the city
   ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
     facexy cityx 0
     set curr_distance (distancexy cityx 0) ; registers current distance from city
+    
+    if curr_distance > greatest_distance [
+      set greatest_distance curr_distance 
+    ]
+        
     rt random-normal 0 20  ;random wiggle movement
     ask patch-ahead 1 [
       set new_distance (distancexy x1 0)  ;registers future position from city
     ]
+    
     if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
       forward distance patch-ahead .8 ;moves to the patch 1 unit ahead
@@ -466,18 +474,18 @@ to return_home_horses  ;function for human behavior when returning to the city
   ]
   
   [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
-      set food_total (food_total + 1)
+      set food_horses (food_horses + 1)
     
       ] 
   set has_food? 0
   
   while [x < 2] [
     set y -1
-    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
-      if x != cityx or y != 0 [ ;does not look for pheromone on the city
+    while [y < 2] [ ;while loops used to ask all surrounding patches for trail
+      if x != cityx or y != 0 [ ;does not look for trail on the city
         ask patch-at x y [
-          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
-            set max_pher pheromone?
+          if trail? > max_road [ ;sets maximum trail value to highest surrounding trail value
+            set max_road trail?
           ]
         ]
       ]
@@ -486,13 +494,13 @@ to return_home_horses  ;function for human behavior when returning to the city
     set x (x + 1) 
   ]
   ifelse recruit = 1 [
-    ifelse max_pher > 0 [
+    ifelse max_road > 0 [
       set xcor cityx
       set ycor 0
       while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
         set heading (random 360)
         scan_ahead_horses   ;scans 1 patch at every random heading
-        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
+        if road_ahead >= (random-float max_road) [  ;random chance based on the maximum trail to follow current trail trail
           face patch-ahead 1
           fd distance patch-ahead .8 ;moves onto 1 patch ahead
           set movement_horses (movement_horses + 1)
@@ -501,7 +509,7 @@ to return_home_horses  ;function for human behavior when returning to the city
         ]
       ]
     ]
-    [ set heading (random 360) ;if no pheromone is present, human enters search mode
+    [ set heading (random 360) ;if no trail is present, human enters search mode
       set behavior 1
     ]
   ]
@@ -521,7 +529,7 @@ end
 
 to return_home_trucks  ;function for human behavior when returning to the city 
   
-  let max_pher 0
+  let max_road 0
   let x -1
   let y -1  
   let trail_follow? 0  
@@ -530,6 +538,11 @@ to return_home_trucks  ;function for human behavior when returning to the city
   ifelse (distancexy cityx 0) > 0 [  ;if human is not at city, execute movement
     facexy cityx 0
     set curr_distance (distancexy cityx 0) ; registers current distance from city
+    
+    if curr_distance > greatest_distance [
+      set greatest_distance curr_distance 
+    ]
+        
     rt random-normal 0 20  ;random wiggle movement
     ask patch-ahead 1 [
       set new_distance (distancexy x1 0)  ;registers future position from city
@@ -542,18 +555,18 @@ to return_home_trucks  ;function for human behavior when returning to the city
   ]
   
   [ if has_food? = 1 [ ;increments the food collection counters on the respective side of the simulation upon returing food to the city
-      set food_total (food_total + 1)
+      set food_trucks (food_trucks + 1)
     
       ] 
   set has_food? 0
   
   while [x < 2] [
     set y -1
-    while [y < 2] [ ;while loops used to ask all surrounding patches for pheromone
-      if x != cityx or y != 0 [ ;does not look for pheromone on the city
+    while [y < 2] [ ;while loops used to ask all surrounding patches for trail
+      if x != cityx or y != 0 [ ;does not look for trail on the city
         ask patch-at x y [
-          if pheromone? > max_pher [ ;sets maximum pheromone value to highest surrounding pheromone value
-            set max_pher pheromone?
+          if trail? > max_road [ ;sets maximum trail value to highest surrounding trail value
+            set max_road trail?
           ]
         ]
       ]
@@ -562,13 +575,13 @@ to return_home_trucks  ;function for human behavior when returning to the city
     set x (x + 1) 
   ]
   ifelse recruit = 1 [
-    ifelse max_pher > 0 [
+    ifelse max_road > 0 [
       set xcor cityx
       set ycor 0
       while [xcor = cityx and ycor = 0 and behavior != 2] [ ;If human enters trail follow behavior, executes loop until human moves away from the city
         set heading (random 360)
         scan_ahead_trucks   ;scans 1 patch at every random heading
-        if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
+        if road_ahead >= (random-float max_road) [  ;random chance based on the maximum trail to follow current trail trail
           face patch-ahead 1
           fd distance patch-ahead patches_to_move_trucks ;moves onto 1 patch ahead
           set movement_trucks (movement_trucks + 1)
@@ -577,7 +590,7 @@ to return_home_trucks  ;function for human behavior when returning to the city
         ]
       ]
     ]
-    [ set heading (random 360) ;if no pheromone is present, human enters search mode
+    [ set heading (random 360) ;if no trail is present, human enters search mode
       set behavior 1
     ]
   ]
@@ -641,24 +654,24 @@ end
 to evaporate_trail
   
   
-  ask patches with [pheromone? > 0] [
+  ask patches with [trail? > 0] [
 
     let evapo 0
     
    set evapo Evaporation_rate
     
-    set pheromone? (pheromone? * (1 - evapo))  ;pheromone evaporation function
-    if pheromone? < .001 [set pheromone? 0]   ;if pheromone becomes almost undetectable, sets value to 0
-    if pcolor != 62 [   ;pheromone is only visually represented on pixels without food
-      if pheromone? >= 6 [set pcolor 99]  
-      if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]   ;color gets darker as pheromone gets weaker
-      if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
-      if pheromone? >= 3 and pheromone? < 4 [set pcolor 96]
-      if pheromone? >= 2 and pheromone? < 3 [set pcolor 95]
-      if pheromone? >= 1 and pheromone? < 2 [set pcolor 94]
-      if pheromone? >= .1  and pheromone? < 1 [set pcolor 93] 
-      if pheromone? >= .01 and pheromone? < .1 [set pcolor 92]
-      if pheromone? = 0 and pcolor = 92 [set pcolor grey] 
+    set trail? (trail? * (1 - evapo))  ;trail evaporation function
+    if trail? < .001 [set trail? 0]   ;if trail becomes almost undetectable, sets value to 0
+    if pcolor != 62 [   ;trail is only visually represented on pixels without food
+      if trail? >= 6 [set pcolor 99]  
+      if trail? >= 5 and trail? < 6 [set pcolor 98]   ;color gets darker as trail gets weaker
+      if trail? >= 4 and trail? < 5 [set pcolor 97]
+      if trail? >= 3 and trail? < 4 [set pcolor 96]
+      if trail? >= 2 and trail? < 3 [set pcolor 95]
+      if trail? >= 1 and trail? < 2 [set pcolor 94]
+      if trail? >= .1  and trail? < 1 [set pcolor 93] 
+      if trail? >= .01 and trail? < .1 [set pcolor 92]
+      if trail? = 0 and pcolor = 92 [set pcolor grey] 
     ]
   ]
   
@@ -820,20 +833,20 @@ to check_food
 
 end
 
-to scan_ahead ;humans look for pheromone directly infront of themselves
+to scan_ahead ;humans look for trail directly infront of themselves
   
   let nx cityx
   
   if can-move? 1 [ ;checks for the world boundaries
     ask patch-ahead 1 [  
-      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
-        set pher_ahead pheromone?
+      ifelse trail? > 0 [ ;if trail ahead, return true
+        set road_ahead trail?
         set dist distancexy nx 0
         ask humans [
           set trail_ahead 1
         ]
       ]
-      [ set pher_ahead 0
+      [ set road_ahead 0
         ask humans [
           set trail_ahead 0
         ]
@@ -843,20 +856,20 @@ to scan_ahead ;humans look for pheromone directly infront of themselves
   
 end
 
-to scan_ahead_horses ;humans look for pheromone directly infront of themselves
+to scan_ahead_horses ;humans look for trail directly infront of themselves
   
   let nx cityx
   
   if can-move? 1 [ ;checks for the world boundaries
     ask patch-ahead 1 [  
-      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
-        set pher_ahead pheromone?
+      ifelse trail? > 0 [ ;if trail ahead, return true
+        set road_ahead trail?
         set dist distancexy nx 0
         ask horses [
           set trail_ahead 1
         ]
       ]
-      [ set pher_ahead 0
+      [ set road_ahead 0
         ask horses [
           set trail_ahead 0
         ]
@@ -866,20 +879,20 @@ to scan_ahead_horses ;humans look for pheromone directly infront of themselves
   
 end   
 
-to scan_ahead_trucks ;humans look for pheromone directly infront of themselves
+to scan_ahead_trucks ;humans look for trail directly infront of themselves
   
   let nx cityx
   
   if can-move? 1 [ ;checks for the world boundaries
     ask patch-ahead 1 [  
-      ifelse pheromone? > 0 [ ;if pheromone ahead, return true
-        set pher_ahead pheromone?
+      ifelse trail? > 0 [ ;if trail ahead, return true
+        set road_ahead trail?
         set dist distancexy nx 0
         ask trucks [
           set trail_ahead 1
         ]
       ]
-      [ set pher_ahead 0
+      [ set road_ahead 0
         ask trucks [
           set trail_ahead 0
         ]
@@ -889,9 +902,9 @@ to scan_ahead_trucks ;humans look for pheromone directly infront of themselves
   
 end    
 
-to scan_trail ;function to follow pheromone trails
+to scan_trail ;function to follow trail trails
   
-  let max_pher 0
+  let max_road 0
   let x2 xcor
   let y2 ycor
   let nx cityx
@@ -900,19 +913,19 @@ to scan_trail ;function to follow pheromone trails
   set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
   ask neighbors [
     if distancexy nx 0 > curr_distance[
-      if pheromone? > 0 [
-        if pheromone? > max_pher [
-          set max_pher pheromone?
+      if trail? > 0 [
+        if trail? > max_road [
+          set max_road trail?
         ]                
       ]
     ]
   ]
-  ifelse max_pher > 0 [  
+  ifelse max_road > 0 [  
     while [xcor = x2 and ycor = y2] [
       set heading (random 360)
       set color white ;turn white while following a trail for visual effect
       scan_ahead 
-      if pher_ahead > random max_pher [
+      if road_ahead > random max_road [
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
@@ -936,9 +949,9 @@ to scan_trail ;function to follow pheromone trails
   
 end  
 
-to scan_trail_horses ;function to follow pheromone trails
+to scan_trail_horses ;function to follow trail trails
   
-  let max_pher 0
+  let max_road 0
   let x2 xcor
   let y2 ycor
   let nx cityx
@@ -947,19 +960,19 @@ to scan_trail_horses ;function to follow pheromone trails
   set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
   ask neighbors [
     if distancexy nx 0 > curr_distance[
-      if pheromone? > 0 [
-        if pheromone? > max_pher [
-          set max_pher pheromone?
+      if trail? > 0 [
+        if trail? > max_road [
+          set max_road trail?
         ]                
       ]
     ]
   ]
-  ifelse max_pher > 0 [  
+  ifelse max_road > 0 [  
     while [xcor = x2 and ycor = y2] [
       set heading (random 360)
       set color white ;turn white while following a trail for visual effect
       scan_ahead_horses 
-      if pher_ahead > random max_pher [
+      if road_ahead > random max_road [
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
@@ -983,9 +996,9 @@ to scan_trail_horses ;function to follow pheromone trails
   
 end  
 
-to scan_trail_trucks ;function to follow pheromone trails
+to scan_trail_trucks ;function to follow trail trails
   
-  let max_pher 0
+  let max_road 0
   let x2 xcor
   let y2 ycor
   let nx cityx
@@ -994,19 +1007,19 @@ to scan_trail_trucks ;function to follow pheromone trails
   set curr_distance (distancexy cityx 0) ;will not follow trails that get closer to the city
   ask neighbors [
     if distancexy nx 0 > curr_distance[
-      if pheromone? > 0 [
-        if pheromone? > max_pher [
-          set max_pher pheromone?
+      if trail? > 0 [
+        if trail? > max_road [
+          set max_road trail?
         ]                
       ]
     ]
   ]
-  ifelse max_pher > 0 [  
+  ifelse max_road > 0 [  
     while [xcor = x2 and ycor = y2] [
       set heading (random 360)
       set color white ;turn white while following a trail for visual effect
       scan_ahead_trucks
-      if pher_ahead > random max_pher [
+      if road_ahead > random max_road [
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
@@ -1033,17 +1046,17 @@ end
 to color_trail
   
   ask patch-here [ 
-    if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay pheromone ontop of the city
-      ;function to lay down pheromone during behvaior 3
-      set pheromone? (pheromone? + 1)  ;increments pheromone by 1 every tick
-      if pcolor != 62 [   ;only draws pheromone on pixels without food
-        if pheromone? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on pheromone strength
-        if pheromone? >= 5 and pheromone? < 6 [set pcolor 98]
-        if pheromone? >= 4 and pheromone? < 5 [set pcolor 97]
-        if pheromone? >= 3 and pheromone? < 4 [set pcolor 96]
-        if pheromone? >= 2 and pheromone? < 3 [set pcolor 95]
-        if pheromone? >= 1 and pheromone? < 2 [set pcolor 94]
-        if pheromone? < 1  and pcolor = grey [set pcolor 93]   ;will not draw pheromone over food, only grey space
+    if ((pycor != 0) or (pxcor != -100)) and ((pycor != 0) or (pxcor != 100)) [ ;will not lay trail ontop of the city
+      ;function to lay down trail during behvaior 3
+      set trail? (trail? + 1)  ;increments trail by 1 every tick
+      if pcolor != 62 [   ;only draws trail on pixels without food
+        if trail? >= 6 [set pcolor 99]     ;gradual progression from dark blue to white based on trail strength
+        if trail? >= 5 and trail? < 6 [set pcolor 98]
+        if trail? >= 4 and trail? < 5 [set pcolor 97]
+        if trail? >= 3 and trail? < 4 [set pcolor 96]
+        if trail? >= 2 and trail? < 3 [set pcolor 95]
+        if trail? >= 1 and trail? < 2 [set pcolor 94]
+        if trail? < 1  and pcolor = grey [set pcolor 93]   ;will not draw trail over food, only grey space
                                                                 ; set trail_evaporation  trail_evaporation
       ]
     ]
@@ -1057,38 +1070,60 @@ end
 ;;;plotting and data-exporting;;;;;;;;plotting and data-exporting;;;;;;;;;;;;;;;;;plotting and data-exporting;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to save_pile_config
+
+to plot_joules_vs_time
   
-  ask patches [
-    set lfood? 0 ;resets all different pile configurations to 0  
-    if pcolor = 62 [set lfood? 1]
-  ]
-  
+    set-current-plot "Gigajoules expended v. Time" ;plot name
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy ticks gigajoules_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy ticks gigajoules_horses
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy ticks gigajoules_trucks
+    
 end
 
-
-to regrow_patches
-  ask patches [
-    if ticks_since_harvesting >= ticks_to_wait_after_harvesting [
-      if food_in_patch < max_food_in_a_patch [
-        if food_in_patch < 0 [
-          set food_in_patch (food_in_patch + 1)
-        ]
-      ]
-    ]
-    set ticks_since_harvesting (ticks_since_harvesting + 1)
-  ]
+to plot_joules_vs_distance
   
+    set-current-plot "Gigajoules expended v. Greatest length of food network" ;plot name
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy greatest_distance gigajoules_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy greatest_distance gigajoules_horses
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy greatest_distance gigajoules_trucks
+    
+end
+
+to plot_joules_per_food_vs_distance
+  
+    set-current-plot "Gigajoules expended to harvest 1 km v. Greatest length of food network" ;plot name
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy greatest_distance food_joule_ratio_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy greatest_distance food_joule_ratio_horses 
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy greatest_distance food_joule_ratio_trucks 
+    
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 670
 52
-1490
-533
+1482
+529
 200
 111
-2.02
+2.0
 1
 10
 1
@@ -1109,10 +1144,10 @@ ticks
 30.0
 
 BUTTON
-3
-53
-92
-116
+59
+205
+232
+238
 New Setup
 setup_world\nif ticks > 4 [\nfile-delete \"netlogo food log.txt\"\n]\n
 NIL
@@ -1126,10 +1161,10 @@ NIL
 1
 
 SLIDER
-101
-54
-274
-87
+59
+62
+232
+95
 pop_humans
 pop_humans
 0
@@ -1141,12 +1176,12 @@ humans
 HORIZONTAL
 
 BUTTON
-282
-300
-459
-390
+424
+206
+600
+239
 Run
-go_density_recruit\n;do-plotting-right\n;do-plotting-left\n;test
+;main loop\ngo_density_recruit\n\n;plotting\nplot_joules_vs_time\nplot_joules_vs_distance\nplot_joules_per_food_vs_distance
 T
 1
 T
@@ -1158,15 +1193,15 @@ NIL
 1
 
 SLIDER
-282
-151
-458
-184
+240
+159
+416
+192
 Evaporation_rate
 Evaporation_rate
 .0001
 .1
-0.01
+1.0E-4
 .0001
 1
 NIL
@@ -1175,19 +1210,19 @@ HORIZONTAL
 MONITOR
 670
 10
-748
+799
 55
-food collected
+Kilometers harvested
 food_total
 0
 1
 11
 
 SLIDER
-465
-102
-640
-135
+423
+110
+598
+143
 Initial_expansion
 Initial_expansion
 0.9
@@ -1199,10 +1234,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-282
-102
-458
-135
+240
+110
+416
+143
 Lay_a_trail
 Lay_a_trail
 -9
@@ -1214,65 +1249,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-343
-10
-405
-39
+301
+18
+363
+47
 Setup
 24
 0.0
 1
 
-BUTTON
-100
-197
-274
-230
-Save Layout
-save_pile_config
-NIL
-1
-T
-OBSERVER
-NIL
-S
-NIL
-NIL
-1
-
-BUTTON
-464
-198
-641
-231
-Load Layout
-setup_save
-NIL
-1
-T
-OBSERVER
-NIL
-L
-NIL
-NIL
-1
-
-SWITCH
-3
-128
-93
-161
-plot?
-plot?
-0
-1
--1000
-
 SLIDER
-283
-197
-458
-230
+241
+205
+416
+238
 Abandon_trail
 Abandon_trail
 0
@@ -1284,10 +1274,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-465
-151
-641
-184
+423
+159
+599
+192
 Turn_while_searching
 Turn_while_searching
 0
@@ -1299,10 +1289,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-281
-54
-457
-87
+239
+62
+415
+95
 Density_Recruit
 Density_Recruit
 -100
@@ -1314,10 +1304,10 @@ Density_Recruit
 HORIZONTAL
 
 SLIDER
-465
-54
-640
-87
+423
+62
+598
+95
 Site_fidelity
 Site_fidelity
 -100
@@ -1328,50 +1318,22 @@ Site_fidelity
 %
 HORIZONTAL
 
-BUTTON
-3
-174
-93
-231
-Remove trails
-ask patches [\n set pheromone? 0\n ]
-NIL
-1
-T
-OBSERVER
-NIL
-T
-NIL
-NIL
-1
-
 MONITOR
-747
+799
 10
-847
+964
 55
-total movement
-movement_total
-2
-1
-11
-
-MONITOR
-846
-10
-1011
-55
-total kilojoules
-kilojoules_total
+Total Gigajoules expended
+gigajoules_total
 0
 1
 11
 
 SLIDER
-102
-102
-274
-135
+60
+110
+232
+143
 pop_horses
 pop_horses
 0
@@ -1383,10 +1345,10 @@ horses
 HORIZONTAL
 
 SLIDER
-102
-151
-274
-184
+60
+159
+232
+192
 pop_trucks
 pop_trucks
 0
@@ -1398,37 +1360,107 @@ trucks
 HORIZONTAL
 
 MONITOR
-1034
+1020
 10
-1182
+1174
 55
-Kilojoules used by trucks
-kilojoules_trucks
+Gigajoules used by trucks
+gigajoules_trucks
 0
 1
 11
 
 MONITOR
-1182
+1168
 10
-1333
+1325
 55
-Kilojoules used by horses
-kilojoules_horses
+Gigajoules used by horses
+gigajoules_horses
 0
 1
 11
 
 MONITOR
-1333
+1319
 10
-1490
+1482
 55
-Kilojoules used by humans
-kilojoules_humans
+Gigajoules used by humans
+Gigajoules_humans
 0
 1
 11
+
+PLOT
+8
+346
+402
+538
+Gigajoules expended v. Time
+time
+Gigajoules expended
+0.0
+2000.0
+0.0
+1000000.0
+true
+false
+"" ""
+PENS
+"Humans" 1.0 0 -16777216 true "" ""
+"Horses" 1.0 0 -10402772 true "" ""
+"Trucks" 1.0 0 -2674135 true "" ""
+
+PLOT
+5
+562
+404
+761
+Gigajoules expended v. Greatest length of food network
+Greatest Distance From City Traveled
+Gigajoules Expended
+0.0
+200.0
+0.0
+1000000.0
+true
+false
+"" ""
+PENS
+"Humans" 1.0 0 -16777216 true "" ""
+"Horses" 1.0 0 -10402772 true "" ""
+"Trucks" 1.0 0 -2674135 true "" ""
+
+PLOT
+541
+558
+1098
+814
+Gigajoules expended to harvest 1 km v. Greatest length of food network
+Greatest Length of Food Network
+Gigajoules Expended to Harvest 1 km
+25.0
+150.0
+30.0
+1000.0
+false
+false
+"" ""
+PENS
+"humans" 1.0 0 -16777216 true "" ""
+"trucks" 1.0 0 -2674135 true "" ""
+"horses" 1.0 0 -10402772 true "" ""
+
+TEXTBOX
+294
+310
+373
+339
+Results
+24
+0.0
+1
 
 @#$#@#$#@
 ##Problem Definition

@@ -2,10 +2,12 @@ globals [
    pher_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
    food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total kilojoules_total time_ticks
    seconds_per_hour max_food_in_a_patch ticks_to_wait_after_harvesting
+   movement_humans movement_horses movement_trucks kilojoules_humans kilojoules_horses kilojoules_trucks cal_per_hour_horses cal_per_gallon kilometers_per_gallon
    ]
 ;first line are vars from original code
 ;second line are vars we created to count kilojoules for humans
 ;third line are vars added as part of the most recent edits
+;fourth line are from the final day of edits
 
 breed [humans human]
 breed [horses horse]
@@ -89,7 +91,7 @@ to setup_breeds
     set ycor (-7 + random 14) ;horse location
     set xcor ((xcor - 7) + random 14)
     set heading random 360 ;horse heading
-    ;set behavior 0 ;sets the horses to their initial behavior condition
+    set behavior 0 ;sets the horses to their initial behavior condition
     set size 1
   ]
   
@@ -103,17 +105,27 @@ to setup_breeds
     set ycor (-7 + random 14) ;truck location
     set xcor ((xcor - 7) + random 14)
     set heading random 360 ;truck heading
-    ;set behavior 0 ;sets the trucks to their initial behavior condition
+    set behavior 0 ;sets the trucks to their initial behavior condition
     set size 1
   ]
 end
 
 to setup_vars ;;executed by setup
+  
   ;;for calculating kjoules for human movement
-  set cal_per_min_kg 240 ;in units of Cal * 1/(sec*kg)
+  set cal_per_min_kg 0.06 ;in units of Cal * 1/(sec*kg)
   set kg_per_individual 62 ;average human body mass
   set kilojoule_conversion 4.184  ;4.184 kilojoules per Calorie.
   set sec_per_tick 60; based on program measurements
+  
+  ;;for calculating kjoules for horse movement
+  set cal_per_hour_horses 2500 ;From National Academy's NRH's 2007 study
+  
+  
+  ;;for calculating kjoules for truck movement
+  set cal_per_gallon 35000 ;kcal in a gallon of diesel
+  set kilometers_per_gallon 6; avg fuel efficiency of a highly effecient loaded semi
+  
   
   set seconds_per_hour 3600
   
@@ -130,7 +142,8 @@ to setup_vars ;;executed by setup
   ]
   
   ask horses [
-      set speed_horses 21.5; in km/h, from Sean's data for a canter speed
+      set speed_horses 13; in km/h, from Sean's data for a trot speed
+      ;lowered this speed b/c data was unavailale for calories burned by a canter, but is available for a trot
       set dist_to_move_horses (speed_horses * (sec_per_tick / seconds_per_hour))
       set patches_to_move_horses (dist_to_move_horses / (size_patch / 1000))
   ]
@@ -176,7 +189,7 @@ to go_density_recruit ;;function executed by the "run" button
     if not can-move? 1 or pcolor = black[ ;if humans are near the world boundary, will turn 180 degrees and move away 1 unit
       rt 180 
      fd 1
-     set movement_total (movement_total + 1) 
+     set movement_humans (movement_humans + 1) 
    ]
     
     ;;At each tick, humans decide on an individual basis to execute one of six behviors. 
@@ -336,10 +349,13 @@ to go_density_recruit ;;function executed by the "run" button
   regrow_patches
   
   set time_ticks (time_ticks + 1)
-  set kilojoules_total (cal_per_min_kg * kg_per_individual * kilojoule_conversion * sec_per_tick * pop_humans * time_ticks)
-  ;;This NEEDS to change when some form of population change is implemented.
-  ;;Does it? It would function as well if done multiple times per tick... right?
-
+  
+  set kilojoules_humans (cal_per_min_kg * kg_per_individual * kilojoule_conversion / 60 * sec_per_tick * pop_humans * time_ticks)
+  set kilojoules_horses (cal_per_hour_horses / 60 * kilojoule_conversion * pop_horses * time_ticks)
+  set kilojoules_trucks (cal_per_gallon / kilometers_per_gallon * kilojoule_conversion * movement_trucks)
+  set kilojoules_total (kilojoules_humans + kilojoules_horses + kilojoules_trucks)
+  
+  set movement_total (movement_humans + movement_horses + movement_trucks)
   tick ;next time step
   
 end
@@ -368,6 +384,7 @@ to return_home  ;function for human behavior when returning to the city
     if new_distance < curr_distance[ ;only moves if future position from city is closer than current position
       face patch-ahead 1
       forward distance patch-ahead 1 ;moves to the patch 1 unit ahead
+      set movement_humans (movement_humans + 1)
       setxy  pxcor pycor ;centers on the patch after moving
     ]
   ]
@@ -402,7 +419,7 @@ to return_home  ;function for human behavior when returning to the city
         if pher_ahead >= (random-float max_pher) [  ;random chance based on the maximum pheromone to follow current pheromone trail
           face patch-ahead 1
           fd distance patch-ahead 1 ;moves onto 1 patch ahead
-          set movement_total ((movement_total + 1) )
+          set movement_humans ((movement_humans + 1) )
           setxy pxcor pycor ;centers on current patch
           set behavior 2
         ]
@@ -588,9 +605,8 @@ to random_walk
     rt random-normal 0 (st_dev * 180 / pi)
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
-  set movement_total (movement_total + 1) 
-  ;possibly set it to +.25? Unfamiliar with how decimals + move works
-  ;;fixme
+  set movement_humans (movement_humans + .25) 
+
   
 end
 
@@ -604,8 +620,6 @@ to random_walk_horses
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
   set movement_total (movement_total + 1) 
-  ;possibly set it to +.25? Unfamiliar with how decimals + move works
-  ;;fixme
   
 end
 
@@ -619,8 +633,6 @@ to random_walk_trucks
   ]
   fd .25   ;turns up to 30 degrees off of current heading and moves forward 1/4 of maximum speed
   set movement_total (movement_total + 1) 
-  ;possibly set it to +.25? Unfamiliar with how decimals + move works
-  ;;fixme
   
 end
 
@@ -664,7 +676,7 @@ to find_food
   facexy foodx foody ;moves towards last known food location
   rt (-20 + random 40)
   fd 1
-  set movement_total (movement_total + 1) 
+  set movement_humans (movement_humans + 1) 
   setxy xcor ycor
   
   
@@ -904,7 +916,7 @@ to scan_trail ;function to follow pheromone trails
         if dist >= distancexy cityx 0 [
           face patch-ahead 1
           fd distance patch-ahead 1
-          set movement_total (movement_total + 1) 
+          set movement_humans (movement_humans + 1) 
           setxy pxcor pycor
         ]          
       ]
@@ -1120,10 +1132,10 @@ SLIDER
 248
 pop_humans
 pop_humans
-1
+0
 1000
-210
-1
+0
+10
 1
 humans
 HORIZONTAL
@@ -1381,8 +1393,8 @@ pop_horses
 pop_horses
 0
 1000
-236
-1
+50
+10
 1
 horses
 HORIZONTAL
@@ -1396,11 +1408,44 @@ pop_trucks
 pop_trucks
 0
 1000
-312
-1
+0
+10
 1
 trucks
 HORIZONTAL
+
+MONITOR
+1081
+45
+1193
+90
+Human movement
+movement_humans
+17
+1
+11
+
+MONITOR
+1193
+45
+1299
+90
+Horse movement
+movement_horses
+17
+1
+11
+
+MONITOR
+1299
+45
+1403
+90
+Truck movement
+movement_trucks
+17
+1
+11
 
 @#$#@#$#@
 ##Problem Definition

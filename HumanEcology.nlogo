@@ -350,7 +350,7 @@ to go_density_recruit ;;function executed by the "run" button
   set food_total (food_humans + food_horses + food_trucks)
   set movement_total (movement_humans + movement_horses + movement_trucks)
   
-  
+  regrow_patches
   
   tick ;next time step
   
@@ -815,21 +815,21 @@ to check_food
     [set behavior 3
     ]
   ]
-  ifelse xcor = 0 [ ;probability to use site fidelity or density recruitment upon finding a seed is determined by GA and user parameters
-    if random-float 1 < ((Site_fidelity / 100) + seed_count) [
-      set fidelity 1
-    ]
-    if random-float 1 < ((Density_recruit / 100) - seed_count) [
-      set recruit 1
-    ]
-  ]
-  [  if random-float 1 < (GAsite + seed_count) [
-    set fidelity 1
-  ]
-  if random-float 1 < (GAtrail - seed_count) [
-    set recruit 1
-  ]
-  ]
+;  ifelse xcor = 0 [ ;probability to use site fidelity or density recruitment upon finding a seed is determined by GA and user parameters
+;    if random-float 1 < ((Site_fidelity / 100) + seed_count) [
+;      set fidelity 1
+;    ]
+;    if random-float 1 < ((Density_recruit / 100) - seed_count) [
+;      set recruit 1
+;    ]
+;  ]
+;  [  if random-float 1 < (GAsite + seed_count) [
+;    set fidelity 1
+;  ]
+;  if random-float 1 < (GAtrail - seed_count) [
+;    set recruit 1
+;  ]
+;  ]
 
 end
 
@@ -1115,6 +1115,21 @@ to plot_joules_per_food_vs_distance
     plotxy greatest_distance food_joule_ratio_trucks 
     
 end
+
+
+to regrow_patches ;;New Code
+   ask patches [
+    set ticks_to_wait_after_harvesting Regrowth_Timer
+    if ticks_since_harvesting >= ticks_to_wait_after_harvesting [ 
+      set pcolor 62]
+;    if pcolor = 62[
+;      set lfood? 1]      
+    set ticks_since_harvesting (ticks_since_harvesting + 1)
+  ]
+end  ;;Endcode
+
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 670
@@ -1144,9 +1159,9 @@ ticks
 30.0
 
 BUTTON
-59
+58
 205
-232
+231
 238
 New Setup
 setup_world\nif ticks > 4 [\nfile-delete \"netlogo food log.txt\"\n]\n
@@ -1169,8 +1184,8 @@ pop_humans
 pop_humans
 0
 1000
-150
-10
+500
+1
 1
 humans
 HORIZONTAL
@@ -1338,7 +1353,7 @@ pop_horses
 pop_horses
 0
 1000
-150
+0
 10
 1
 horses
@@ -1353,7 +1368,7 @@ pop_trucks
 pop_trucks
 0
 1000
-150
+0
 10
 1
 trucks
@@ -1461,6 +1476,21 @@ Results
 24
 0.0
 1
+
+SLIDER
+422
+266
+594
+299
+Regrowth_Timer
+Regrowth_Timer
+0
+20000
+2550
+50
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ##Problem Definition

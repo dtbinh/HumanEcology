@@ -128,7 +128,7 @@ to setup_vars ;;executed by setup
   ;;for calculating kjoules for truck movement
   set cal_per_gallon 35000 ;kcal in a gallon of diesel
   set kilometers_per_gallon 6; avg fuel efficiency of a highly effecient loaded semi
-  set carry_volume_trucks 114.8 ;in cubic m
+  set carry_volume_trucks 200 ;in cubic m
   set squad_size_trucks (ceiling(max_food_in_a_patch / carry_volume_trucks))
 
   ask trucks [
@@ -1176,6 +1176,20 @@ to plot_net_cal_vs_transport_cal
     plotxy calories_expended_trucks net_calories_trucks
     
 end
+
+to plot_ratio_vs_time
+      set-current-plot "Delivered/Transport GCal v. Time"
+    ;one last use of GCal. sorry~
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy time_ticks delivered_over_transport_cal_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy time_ticks delivered_over_transport_cal_horses
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy time_ticks delivered_over_transport_cal_trucks
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 670
@@ -1242,7 +1256,7 @@ BUTTON
 600
 239
 Run
-;main loop\ngo_density_recruit\n\n;plotting\nplot_joules_vs_time\nplot_joules_vs_distance\nplot_joules_per_food_vs_distance\nplot_delivered_vs_transport\nplot_net_cal_vs_transport_cal
+;main loop\ngo_density_recruit\n\n;plotting\nplot_joules_vs_time\nplot_joules_vs_distance\nplot_joules_per_food_vs_distance\nplot_delivered_vs_transport\nplot_net_cal_vs_transport_cal\nplot_ratio_vs_time
 T
 1
 T
@@ -1312,7 +1326,7 @@ HORIZONTAL
 TEXTBOX
 301
 18
-363
+370
 47
 Setup
 24
@@ -1524,10 +1538,10 @@ Results
 1
 
 PLOT
-975
-528
-1322
-745
+1492
+206
+1839
+423
 Delivered GCalories v. Expended GCalories
 NIL
 NIL
@@ -1544,10 +1558,10 @@ PENS
 "trucks" 1.0 0 -2674135 true "" ""
 
 PLOT
-669
-528
-975
-720
+1491
+10
+1839
+201
 Net GCalories v. Expended GCalories
 NIL
 NIL
@@ -1562,6 +1576,37 @@ PENS
 "humans" 1.0 0 -16777216 true "" ""
 "horses" 1.0 0 -10402772 true "" ""
 "trucks" 1.0 0 -2674135 true "" ""
+
+PLOT
+1492
+429
+1841
+626
+Delivered/Transport GCal v. Time
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"humans" 1.0 0 -16777216 true "" ""
+"horses" 1.0 0 -10402772 true "" ""
+"trucks" 1.0 0 -2674135 true "" ""
+
+MONITOR
+528
+418
+656
+463
+NIL
+squad_size_trucks
+17
+1
+11
 
 @#$#@#$#@
 ##Problem Definition

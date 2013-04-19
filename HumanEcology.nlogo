@@ -2,10 +2,18 @@ globals [
    road_ahead new_distance curr_distance dist pile_radius GAtrail GAsite GAexpand lfood_counter1
    food_total cal_per_min_kg kg_per_individual kilojoule_conversion sec_per_tick movement_total 
    gigajoules_total time_ticks seconds_per_hour max_food_in_a_patch ticks_to_wait_after_harvesting
-   movement_humans movement_horses movement_trucks gigajoules_humans gigajoules_horses gigajoules_trucks
+   movement_humans movement_horses movement_trucks gigajoules_expended_humans gigajoules_expended_horses gigajoules_expended_trucks
    cal_per_hour_horses cal_per_gallon kilometers_per_gallon size_patch carry_volume_humans carry_volume_horses
    carry_volume_trucks squad_size_humans squad_size_horses squad_size_trucks greatest_distance
    food_humans food_horses food_trucks food_joule_ratio_humans food_joule_ratio_horses food_joule_ratio_trucks
+   
+   ;;vars after this were added post-completion
+   gigajoules_collected_humans gigajoules_collected_horses gigajoules_collected_trucks
+   calories_collected_humans calories_collected_horses calories_collected_trucks
+   calories_expended_humans calories_expended_horses calories_expended_trucks
+   net_calories_humans net_calories_horses net_calories_trucks
+   
+   delivered_over_transport_cal_humans delivered_over_transport_cal_horses delivered_over_transport_cal_trucks
    ]
 ;first line are vars kept from original code
 ;all other lines are vars we added
@@ -338,15 +346,35 @@ to go_density_recruit ;;function executed by the "run" button
   
   set time_ticks (time_ticks + 1)
   
-  set gigajoules_humans (cal_per_min_kg * kg_per_individual * kilojoule_conversion / 60 * sec_per_tick * pop_humans * squad_size_humans * time_ticks / 1000 / 1000)
-  set gigajoules_horses (cal_per_hour_horses / 60 * kilojoule_conversion * pop_horses * squad_size_horses * time_ticks / 1000 / 1000)
-  set gigajoules_trucks (cal_per_gallon / kilometers_per_gallon * kilojoule_conversion * squad_size_trucks * movement_trucks / 1000 / 1000)
+  set calories_expended_humans (cal_per_min_kg * kg_per_individual / 60 * sec_per_tick * pop_humans * squad_size_humans * time_ticks / 1000 / 1000)
+  set calories_expended_horses (cal_per_hour_horses / 60 * pop_horses * squad_size_horses * time_ticks / 1000 / 1000)
+  set calories_expended_trucks (cal_per_gallon / kilometers_per_gallon * squad_size_trucks * movement_trucks / 1000 / 1000)
   
-  set food_joule_ratio_humans (gigajoules_humans / food_humans)
-  set food_joule_ratio_horses ( gigajoules_horses / food_horses)
-  set food_joule_ratio_trucks (gigajoules_trucks / food_trucks)
+  set calories_collected_humans (food_humans * 2000)
+  set calories_collected_horses (food_horses * 2000)
+  set calories_collected_trucks (food_trucks * 2000)
   
-  set gigajoules_total (gigajoules_humans + gigajoules_horses + gigajoules_trucks) 
+  set net_calories_humans (calories_collected_humans - calories_expended_humans)
+  set net_calories_horses (calories_collected_horses - calories_expended_horses)
+  set net_calories_trucks (calories_collected_trucks - calories_expended_trucks)
+  
+  set delivered_over_transport_cal_humans (calories_collected_humans / calories_expended_humans)
+  set delivered_over_transport_cal_horses (calories_collected_horses / calories_expended_horses)
+  set delivered_over_transport_cal_trucks (calories_collected_trucks / calories_expended_trucks)
+  
+  set gigajoules_expended_humans (cal_per_min_kg * kg_per_individual * kilojoule_conversion / 60 * sec_per_tick * pop_humans * squad_size_humans * time_ticks / 1000 / 1000)
+  set gigajoules_expended_horses (cal_per_hour_horses / 60 * kilojoule_conversion * pop_horses * squad_size_horses * time_ticks / 1000 / 1000)
+  set gigajoules_expended_trucks (cal_per_gallon / kilometers_per_gallon * kilojoule_conversion * squad_size_trucks * movement_trucks / 1000 / 1000)
+  
+  set gigajoules_collected_humans (food_humans * 2000 * kilojoule_conversion) ;km harvested * Gcalories per km * cal-to-kilojoule conversion, units are Gjoule
+  set gigajoules_collected_horses (food_horses * 2000 * kilojoule_conversion)
+  set gigajoules_collected_trucks (food_trucks * 2000 * kilojoule_conversion)
+  
+  set food_joule_ratio_humans (gigajoules_expended_humans / food_humans)
+  set food_joule_ratio_horses ( gigajoules_expended_horses / food_horses)
+  set food_joule_ratio_trucks (gigajoules_expended_trucks / food_trucks)
+  
+  set gigajoules_total (gigajoules_expended_humans + gigajoules_expended_horses + gigajoules_expended_trucks) 
   set food_total (food_humans + food_horses + food_trucks)
   set movement_total (movement_humans + movement_horses + movement_trucks)
   
@@ -1076,13 +1104,13 @@ to plot_joules_vs_time
     set-current-plot "Gigajoules expended v. Time" ;plot name
     set-current-plot-pen "humans"
     plot-pen-down
-    plotxy ticks gigajoules_humans
+    plotxy ticks gigajoules_expended_humans
     set-current-plot-pen "horses"
     plot-pen-down
-    plotxy ticks gigajoules_horses
+    plotxy ticks gigajoules_expended_horses
     set-current-plot-pen "trucks"
     plot-pen-down
-    plotxy ticks gigajoules_trucks
+    plotxy ticks gigajoules_expended_trucks
     
 end
 
@@ -1091,13 +1119,13 @@ to plot_joules_vs_distance
     set-current-plot "Gigajoules expended v. Greatest length of food network" ;plot name
     set-current-plot-pen "humans"
     plot-pen-down
-    plotxy greatest_distance gigajoules_humans
+    plotxy greatest_distance gigajoules_expended_humans
     set-current-plot-pen "horses"
     plot-pen-down
-    plotxy greatest_distance gigajoules_horses
+    plotxy greatest_distance gigajoules_expended_horses
     set-current-plot-pen "trucks"
     plot-pen-down
-    plotxy greatest_distance gigajoules_trucks
+    plotxy greatest_distance gigajoules_expended_trucks
     
 end
 
@@ -1113,6 +1141,39 @@ to plot_joules_per_food_vs_distance
     set-current-plot-pen "trucks"
     plot-pen-down
     plotxy greatest_distance food_joule_ratio_trucks 
+    
+end
+
+to plot_delivered_vs_transport
+    set-current-plot "Delivered GCalories v. Expended GCalories" ;plot name. 
+    
+    ;Keep in mind this is Giga-foodcalories.
+    ;I know exactly how bad of a person this name makes me.
+    
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy calories_expended_humans calories_collected_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy calories_expended_horses calories_collected_horses
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy calories_expended_trucks calories_collected_trucks
+    
+end
+
+to plot_net_cal_vs_transport_cal
+    set-current-plot "Net GCalories v. Expended GCalories"
+    ;Sorry again for the GCal units~
+    set-current-plot-pen "humans"
+    plot-pen-down
+    plotxy calories_expended_humans net_calories_humans
+    set-current-plot-pen "horses"
+    plot-pen-down
+    plotxy calories_expended_horses net_calories_horses
+    set-current-plot-pen "trucks"
+    plot-pen-down
+    plotxy calories_expended_trucks net_calories_trucks
     
 end
 @#$#@#$#@
@@ -1181,7 +1242,7 @@ BUTTON
 600
 239
 Run
-;main loop\ngo_density_recruit\n\n;plotting\nplot_joules_vs_time\nplot_joules_vs_distance\nplot_joules_per_food_vs_distance
+;main loop\ngo_density_recruit\n\n;plotting\nplot_joules_vs_time\nplot_joules_vs_distance\nplot_joules_per_food_vs_distance\nplot_delivered_vs_transport\nplot_net_cal_vs_transport_cal
 T
 1
 T
@@ -1365,7 +1426,7 @@ MONITOR
 1174
 55
 Gigajoules used by trucks
-gigajoules_trucks
+gigajoules_expended_trucks
 0
 1
 11
@@ -1376,7 +1437,7 @@ MONITOR
 1325
 55
 Gigajoules used by horses
-gigajoules_horses
+gigajoules_expended_horses
 0
 1
 11
@@ -1387,7 +1448,7 @@ MONITOR
 1482
 55
 Gigajoules used by humans
-Gigajoules_humans
+Gigajoules_expended_humans
 0
 1
 11
@@ -1461,6 +1522,46 @@ Results
 24
 0.0
 1
+
+PLOT
+975
+528
+1322
+745
+Delivered GCalories v. Expended GCalories
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"humans" 1.0 0 -16777216 true "" ""
+"horses" 1.0 0 -10402772 true "" ""
+"trucks" 1.0 0 -2674135 true "" ""
+
+PLOT
+669
+528
+975
+720
+Net GCalories v. Expended GCalories
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"humans" 1.0 0 -16777216 true "" ""
+"horses" 1.0 0 -10402772 true "" ""
+"trucks" 1.0 0 -2674135 true "" ""
 
 @#$#@#$#@
 ##Problem Definition

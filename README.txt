@@ -6,25 +6,23 @@ It is a StarLogo model of human ecology in cities, and is still undergoing heavy
 More information is available on github.com/nightcaptain/HumanEcology, our information tab in the program, and our interim report at http://mode.lanl.k12.nm.us/get_interim1213.php?team_id=3.
 
 
-
 ###########
 ## TODO: ##
 ###########
 
   ** Top-priority items **
-     - Set scale of pixels to physical meters and dial back agent speed as necessary
-       - What size is appropriate?
-       - Modify patches to have a "set" amount of food
-       - Consider other agents-- horses, specifically, and the rules that bind their movement
-     - Fix hole-clearing and variable-clearing in setup
-     - Regrowth of food
+     - Replace volume with weight when working with gathered food
+     - Move from faster model to slower + more accurate model
+          - Adjust minute timescale
+          - Adjust patch size?
+     - Fix the behavior-bug, then re-add the regrowth of food
      - Reproduction and death
-     - Completely redo information tab
-     - Cite sources
 
   ** Do when able **
      - Delete missed comments; unused variables; useless functions;; splitscreen remnants
-     - Change patch colors of pheromones to roadlike colours
+     - Change patch colors of road to roadlike colours
+     - Add on/off switches for plotting agent classes
+     - Reorganize the graphs and sliders to be more easily readable. 
      
   ** Future ideas **
      - Creation of other settlements/cities
@@ -49,6 +47,5 @@ Mentors/Teachers:
   Michael Harris
   Trevor Fristoe
   Sean Hammond
-  Jeff Nikola
+  Jeff Nekola
   Michael Chang
- ## ADD THE REST OF UNM TEAM ##
